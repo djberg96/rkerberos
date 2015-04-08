@@ -1,9 +1,20 @@
 require 'mkmf'
 
-dir_config('rkerberos', '/usr/local')
+if File::ALT_SEPARATOR
+  dir_config('rkerberos', 'C:/Progra~2/MIT/Kerberos')
+else
+  dir_config('rkerberos', '/usr/local')
+end
 
 have_header('krb5.h')
-have_library('krb5')
+
+if File::ALT_SEPARATOR
+  unless have_library('krb5')
+    have_library('i386/krb5_32')
+  end
+else
+  have_library('krb5')
+end
 
 unless pkg_config('com_err')
   puts 'warning: com_err not found, usually a dependency for kadm5clnt'
@@ -11,8 +22,6 @@ end
 
 if have_header('kadm5/admin.h')
   have_library('kadm5clnt')
-else
-  raise "kadm5clnt library not found"
 end
 
 if have_header('kdb.h')
