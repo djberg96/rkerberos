@@ -1,3 +1,4 @@
+#ifdef HAVE_KADM5_ADMIN_H
 #include <rkerberos.h>
 
 VALUE cKadm5Policy;
@@ -191,3 +192,4 @@ void Init_policy(){
 
   rb_define_alias(cKadm5Policy, "name", "policy");
 }
+#endif

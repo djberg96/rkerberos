@@ -604,9 +604,11 @@ void Init_rkerberos(){
 
   Init_context();
   Init_ccache();
+#ifdef HAVE_KADM5_ADMIN_H
   Init_kadm5();
   Init_config();
   Init_policy();
+#endif
   Init_principal();
   Init_keytab();
   Init_keytab_entry();

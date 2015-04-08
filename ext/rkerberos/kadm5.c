@@ -1,3 +1,4 @@
+#ifdef HAVE_KADM5_ADMIN_H
 #include <rkerberos.h>
 #include <kdb.h>
 
@@ -1088,3 +1089,4 @@ void Init_kadm5(){
   rb_define_const(cKadm5, "SUPPORT_DESMD5", INT2FIX(KRB5_KDB_SUPPORT_DESMD5));
   rb_define_const(cKadm5, "NEW_PRINC", INT2FIX(KRB5_KDB_NEW_PRINC));
 }
+#endif

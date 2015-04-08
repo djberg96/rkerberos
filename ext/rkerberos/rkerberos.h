@@ -11,9 +11,11 @@
 
 // Function Prototypes
 void Init_context();
+#ifdef HAVE_KADM5_ADMIN_H
 void Init_kadm5();
 void Init_config();
 void Init_policy();
+#endif
 void Init_principal();
 void Init_keytab();
 void Init_keytab_entry();
@@ -84,6 +86,7 @@ typedef struct {
   krb5_principal principal;
 } RUBY_KRB5_CCACHE;
 
+#ifdef HAVE_KADM5_ADMIN_H
 typedef struct {
   krb5_context ctx;
   kadm5_config_params config;
@@ -93,4 +96,5 @@ typedef struct {
   krb5_context ctx;
   kadm5_policy_ent_rec policy;
 } RUBY_KADM5_POLICY;
+#endif
 #endif

@@ -1,3 +1,4 @@
+#ifdef HAVE_KADM5_ADMIN_H
 #include <rkerberos.h>
 
 VALUE cKadm5Config;
@@ -297,3 +298,4 @@ void Init_config(){
   rb_define_attr(cKadm5Config, "realm", 1, 0);
   rb_define_attr(cKadm5Config, "stash_file", 1, 0);
 }
+#endif
