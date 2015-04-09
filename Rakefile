@@ -5,6 +5,9 @@ require 'rake/clean'
 require 'rbconfig'
 require 'rubygems/package'
 
+# Windows one-click
+require 'devkit' if RbConfig::CONFIG['host_os'] =~ /cygwin|mingw/i
+
 Rake::ExtensionTask.new('rkerberos')
 
 CLEAN.include(
