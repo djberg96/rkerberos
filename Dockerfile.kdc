@@ -1,0 +1,19 @@
+# MIT Kerberos KDC/Admin Server for arm64/amd64
+FROM debian:stable-slim
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      krb5-kdc krb5-admin-server krb5-config && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up KDC and admin server config
+COPY krb5.conf /etc/krb5.conf
+COPY kadm5.acl /etc/krb5kdc/kadm5.acl
+COPY kdc.conf /etc/krb5kdc/kdc.conf
+
+# Entrypoint script to initialize DB and start daemons
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+EXPOSE 88 749
+ENTRYPOINT ["/docker-entrypoint.sh"]

@@ -1,5 +1,14 @@
 version: '3.8'
 services:
+  kerberos-kdc:
+    build:
+      context: .
+      dockerfile: Dockerfile.kdc
+    container_name: kerberos-kdc
+    ports:
+      - "88:88"
+      - "749:749"
+
   rkerberos-test:
     build: .
     container_name: rkerberos-test
@@ -15,6 +24,8 @@ services:
     volumes:
       - .:/app
     working_dir: /app
+    depends_on:
+      - kerberos-kdc
 
   ldap:
     image: osixia/openldap:latest
