@@ -8,10 +8,23 @@ services:
       - KRB5_CONFIG=/etc/krb5.conf
       - KRB5_ADMIN_PRINCIPAL=admin/admin@EXAMPLE.COM
       - KRB5_ADMIN_PASSWORD=adminpassword
-      # Optional LDAP test variables:
-      - KRB5_LDAP_PRINCIPAL=ldapuser@ldap.example.com
-      - KRB5_LDAP_PASSWORD=ldappassword
+      # LDAP test variables for integration tests
+      - KRB5_LDAP_PRINCIPAL=admin@ldap
+      - KRB5_LDAP_PASSWORD=admin
       - KRB5_LDAP_DRIVER=ou=People,dc=example,dc=com:foobar:uid
     volumes:
       - .:/app
     working_dir: /app
+
+  ldap:
+    image: osixia/openldap:latest
+    container_name: ldap
+    environment:
+      LDAP_ORGANISATION: "Example Org"
+      LDAP_DOMAIN: "example.com"
+      LDAP_BASE_DN: "dc=example,dc=com"
+      LDAP_ADMIN_PASSWORD: "admin"
+    ports:
+      - "389:389"
+    volumes:
+      - ./ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
