@@ -20,9 +20,11 @@ RUN bundle install
 # Create a more complete krb5.conf for testing (with kadmin support)
 RUN echo "[libdefaults]\n  default_realm = EXAMPLE.COM\n  dns_lookup_realm = false\n  dns_lookup_kdc = false\n  ticket_lifetime = 24h\n  renew_lifetime = 7d\n  forwardable = true\n[realms]\n  EXAMPLE.COM = {\n    kdc = localhost\n    admin_server = localhost\n    default_domain = example.com\n  }\n[domain_realm]\n  .example.com = EXAMPLE.COM\n  example.com = EXAMPLE.COM\n[kadmin]\n  default_keys = des-cbc-crc:normal des-cbc-md5:normal aes256-cts:normal aes128-cts:normal rc4-hmac:normal\n  admin_server = localhost\n" > /etc/krb5.conf
 
-# Create a minimal KDC and admin server config
+
+# Create a minimal KDC and admin server config, and a permissive ACL for kadmin
 RUN mkdir -p /etc/krb5kdc && \
-    echo "[kdcdefaults]\n kdc_ports = 88\n[kdc]\n profile = /etc/krb5.conf\n" > /etc/krb5kdc/kdc.conf
+    echo "[kdcdefaults]\n kdc_ports = 88\n[kdc]\n profile = /etc/krb5.conf\n" > /etc/krb5kdc/kdc.conf && \
+    echo "admin/admin@EXAMPLE.COM *" > /etc/krb5kdc/kadm5.acl
 
 
 # Create a KDC database and stash file if not present, then add principals

@@ -115,7 +115,10 @@ class TC_Kadm5_Config < Test::Unit::TestCase
 
   test "keysalts basic functionality" do
     assert_respond_to(@config, :keysalts)
-    assert_kind_of(Integer, @config.keysalts)
+    assert_kind_of(Array, @config.keysalts)
+    unless @config.keysalts.empty?
+      assert_kind_of(Kerberos::Kadm5::KeySalt, @config.keysalts.first)
+    end
   end
 
   def teardown

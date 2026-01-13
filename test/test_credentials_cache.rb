@@ -14,7 +14,16 @@ require 'tmpdir'
 
 class TC_Krb5_Credentials_Cache < Test::Unit::TestCase
   def setup
-    @login  = Etc.getlogin
+    # Try to get the current login name robustly
+    @login = Etc.getlogin
+    if @login.nil? || @login.empty?
+      @login = ENV['USER']
+    end
+    if @login.nil? || @login.empty?
+      @login = Etc.getpwuid(Process.uid).name rescue nil
+    end
+    raise "Could not determine current user for Kerberos tests" if @login.nil? || @login.empty?
+
     @princ  = @login + '@' + Kerberos::Krb5.new.default_realm
     @cfile  = File.join(Dir.tmpdir, 'krb5cc_' + Etc.getpwnam(@login).uid.to_s)
     @ccache = nil
