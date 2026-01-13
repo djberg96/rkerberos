@@ -2,12 +2,14 @@ version: '3.8'
 services:
   kerberos-kdc:
     build:
-      context: .
+      context: ./docker
       dockerfile: Dockerfile.kdc
     container_name: kerberos-kdc
     ports:
       - "88:88"
       - "749:749"
+    volumes:
+      - krb5-keytab:/etc/krb5.keytab
 
   rkerberos-test:
     build: .
@@ -23,6 +25,7 @@ services:
       - KRB5_LDAP_DRIVER=ou=People,dc=example,dc=com:foobar:uid
     volumes:
       - .:/app
+      - krb5-keytab:/etc/krb5.keytab
     working_dir: /app
     depends_on:
       - kerberos-kdc
@@ -39,3 +42,6 @@ services:
       - "389:389"
     volumes:
       - ./ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
+
+volumes:
+  krb5-keytab:
