@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  rkerberos-test:
+    build: .
+    container_name: rkerberos-test
+    environment:
+      - LANG=C.UTF-8
+      - KRB5_CONFIG=/etc/krb5.conf
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["rake", "test"]
