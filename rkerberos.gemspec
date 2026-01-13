@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency('rake-compiler')
 
   spec.add_development_dependency('test-unit', '>= 2.1.0')
-  spec.add_development_dependency('dbi-dbrc', '>= 1.1.6')
+  # Removed: spec.add_development_dependency('dbi-dbrc', '>= 1.1.6')
   spec.add_development_dependency('net-ldap')
 
   spec.description = <<-EOF

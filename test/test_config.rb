@@ -25,12 +25,12 @@ class TC_Kadm5_Config < Test::Unit::TestCase
 
   test "kadmind_port basic functionality" do
     assert_respond_to(@config, :kadmind_port)
-    assert_kind_of(Fixnum, @config.kadmind_port)
+    assert_kind_of(Integer, @config.kadmind_port)
   end
 
   test "kpasswd_port basic functionality" do
     assert_respond_to(@config, :kpasswd_port)
-    assert_kind_of(Fixnum, @config.kpasswd_port)
+    assert_kind_of(Integer, @config.kpasswd_port)
   end
 
   test "admin_server basic functionality" do
@@ -60,22 +60,22 @@ class TC_Kadm5_Config < Test::Unit::TestCase
 
   test "mkey_from_kbd basic functionality" do
     assert_respond_to(@config, :mkey_from_kbd)
-    assert_kind_of([Fixnum, NilClass], @config.mkey_from_kbd)
+    assert_kind_of([Integer, NilClass], @config.mkey_from_kbd)
   end
 
   test "enctype basic functionality" do
     assert_respond_to(@config, :enctype)
-    assert_kind_of(Fixnum, @config.enctype)
+    assert_kind_of(Integer, @config.enctype)
   end
 
   test "max_life basic functionality" do
     assert_respond_to(@config, :max_life)
-    assert_kind_of([Fixnum, NilClass], @config.max_life)
+    assert_kind_of([Integer, NilClass], @config.max_life)
   end
 
   test "max_rlife basic functionality" do
     assert_respond_to(@config, :max_rlife)
-    assert_kind_of([Fixnum, NilClass], @config.max_rlife)
+    assert_kind_of([Integer, NilClass], @config.max_rlife)
   end
 
   test "expiration basic functionality" do
@@ -85,7 +85,7 @@ class TC_Kadm5_Config < Test::Unit::TestCase
 
   test "kvno basic functionality" do
     assert_respond_to(@config, :kvno)
-    assert_kind_of([Fixnum, NilClass], @config.kvno)
+    assert_kind_of([Integer, NilClass], @config.kvno)
   end
 
   test "iprop_enabled basic functionality" do
@@ -100,22 +100,22 @@ class TC_Kadm5_Config < Test::Unit::TestCase
 
   test "iprop_polltime basic functionality" do
     assert_respond_to(@config, :iprop_poll_time)
-    assert_kind_of(Fixnum, @config.iprop_poll_time)
+    assert_kind_of(Integer, @config.iprop_poll_time)
   end
 
   test "iprop_port basic functionality" do
     assert_respond_to(@config, :iprop_port)
-    assert_kind_of([Fixnum, NilClass], @config.iprop_port)
+    assert_kind_of([Integer, NilClass], @config.iprop_port)
   end
 
   test "num_keysalts basic functionality" do
     assert_respond_to(@config, :num_keysalts)
-    assert_kind_of(Fixnum, @config.num_keysalts)
+    assert_kind_of(Integer, @config.num_keysalts)
   end
 
   test "keysalts basic functionality" do
     assert_respond_to(@config, :keysalts)
-    assert_kind_of(Fixnum, @config.keysalts)
+    assert_kind_of(Integer, @config.keysalts)
   end
 
   def teardown

@@ -6,6 +6,12 @@ services:
     environment:
       - LANG=C.UTF-8
       - KRB5_CONFIG=/etc/krb5.conf
+      - KRB5_ADMIN_PRINCIPAL=admin/admin@EXAMPLE.COM
+      - KRB5_ADMIN_PASSWORD=adminpassword
+      # Optional LDAP test variables:
+      - KRB5_LDAP_PRINCIPAL=ldapuser@ldap.example.com
+      - KRB5_LDAP_PASSWORD=ldappassword
+      - KRB5_LDAP_DRIVER=ou=People,dc=example,dc=com:foobar:uid
     volumes:
       - .:/app
     working_dir: /app

@@ -196,7 +196,7 @@ class TC_Krb5 < Test::Unit::TestCase
 
   test "get_permitted_enctypes returns expected results" do
     hash = @krb5.get_permitted_enctypes
-    assert_kind_of(Fixnum, hash.keys.first)
+    assert_kind_of(Integer, hash.keys.first)
     assert_kind_of(String, hash.values.first)
     assert_true(hash.values.first.size > 0)
   end

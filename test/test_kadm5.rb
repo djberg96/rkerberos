@@ -14,33 +14,43 @@ require 'rubygems'
 gem 'test-unit'
 
 require 'test/unit'
-require 'dbi/dbrc'
+## Removed: require 'dbi/dbrc'
 require 'rkerberos'
 require 'socket'
 
 class TC_Kerberos_Kadm5 < Test::Unit::TestCase
   def self.startup
     @@server = Kerberos::Kadm5::Config.new.admin_server
-    @@info = DBI::DBRC.new('local-kerberos')
     @@host = Socket.gethostname
-    begin
-      @@ldap_info = DBI::DBRC.new('kerberos-ldap')
-    rescue DBI::DBRC::Error
+
+    # Read credentials/config from environment variables
+    @@user = ENV['KRB5_ADMIN_PRINCIPAL']
+    @@pass = ENV['KRB5_ADMIN_PASSWORD']
+    @@krb5_conf = ENV['KRB5_CONFIG'] || '/etc/krb5.conf'
+
+    # LDAP info (optional)
+    if ENV['KRB5_LDAP_PRINCIPAL'] && ENV['KRB5_LDAP_PASSWORD'] && ENV['KRB5_LDAP_DRIVER']
+      @@ldap_info = {
+        user: ENV['KRB5_LDAP_PRINCIPAL'],
+        password: ENV['KRB5_LDAP_PASSWORD'],
+        driver: ENV['KRB5_LDAP_DRIVER']
+      }
+    else
       @@ldap_info = nil
     end
 
     # For local testing the FQDN may or may not be available, so let's assume
     # that hosts with the same name are on the same domain.
-    if @@server.include?('.') && !@@host.include?('.')
+    if @@server.include?(".") && !@@host.include?(".")
       @@server = @@server.split('.').first
     end
 
-    ENV['KRB5_CONFIG'] = @@info.driver || ENV['KRB5_CONFIG'] || '/etc/krb5.conf'
+    ENV['KRB5_CONFIG'] = @@krb5_conf
   end
 
   def setup
-    @user = @@info.user
-    @pass = @@info.passwd
+    @user = @@user
+    @pass = @@pass
     @kadm = nil
     @princ = nil
     @policy = nil
@@ -51,11 +61,11 @@ class TC_Kerberos_Kadm5 < Test::Unit::TestCase
       gem 'net-ldap'
       require 'net/ldap'
 
-      username = @@ldap_info.user.split('@')
+      username = @@ldap_info[:user].split('@')
       @bind_dn = username[0]
       @ldap_host = username[1]
-      @ldap_password = @@ldap_info.password
-      driver = @@ldap_info.driver.split(':')
+      @ldap_password = @@ldap_info[:password]
+      driver = @@ldap_info[:driver].split(':')
       @subtree_dn = driver[0]
       @existing_ldap = driver[1]
       @userprefix = driver[2]
@@ -270,7 +280,7 @@ class TC_Kerberos_Kadm5 < Test::Unit::TestCase
   end
 
   ##
-  # The following two tests are skipped if there is no .dbrc entry for 'kerberos-ldap'
+  # The following two tests are skipped if there is no LDAP info in environment
   # The expected format for the entries is as follows
   #   username: <bind_dn>@<ldap.hostname>
   #   password: <ldap_bind_password>
@@ -283,7 +293,7 @@ class TC_Kerberos_Kadm5 < Test::Unit::TestCase
   # user must be accessible in LDAP as <userprefix>=<user>,<krbSubtreeDn>, so if userprefix is uid,
   # user is foobar, and krbSubtreeDn is ou=People,dc=example,dc=com, the driver variable should read
   # ou=People,dc=example.com:foobar:uid
-  # The user in the driver must not be the same as the user that is used to connect to kerberos, as it 
+  # The user in the driver must not be the same as the user that is used to connect to kerberos, as it
   # is deleted after each test.
   # If the entry is present, but the format is not matched (or LDAP is misconfigured), theses tests fail.
   ##
@@ -377,7 +387,7 @@ class TC_Kerberos_Kadm5 < Test::Unit::TestCase
   test "generate_random_key returns the number of keys generated" do
     @kadm = Kerberos::Kadm5.new(:principal => @user, :password => @pass)
     @kadm.create_principal(@test_princ, "changeme")
-    assert_kind_of(Fixnum, @kadm.generate_random_key(@test_princ))
+    assert_kind_of(Integer, @kadm.generate_random_key(@test_princ))
     assert_true(@kadm.generate_random_key(@test_princ) > 0)
   end
 
