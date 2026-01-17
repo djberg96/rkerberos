@@ -1,10 +1,44 @@
 version: '3.8'
 services:
+  kerberos:
+    image: mitkrb5/krb5-server:latest
+    container_name: kerberos
+    environment:
+      KRB5_REALM: EXAMPLE.COM
+      KRB5_KDC_PROFILE: /etc/krb5kdc/kdc.conf
+      KRB5_KDC_ACL: /etc/krb5kdc/kadm5.acl
+      KRB5_KDC_DB: /var/lib/krb5kdc/principal
+    volumes:
+      - ./docker/kerberos/krb5.conf:/etc/krb5.conf:ro
+      - ./docker/kerberos/kdc.conf:/etc/krb5kdc/kdc.conf:ro
+      - ./docker/kerberos/kadm5.acl:/etc/krb5kdc/kadm5.acl:ro
+      - ./docker/kerberos/create_principal.sh:/docker-entrypoint-initdb.d/create_principal.sh:ro
+      - krb5-db:/var/lib/krb5kdc
+      - krb5-keytab:/etc/krb5.keytab
+    ports:
+      - "88:88"
+      - "749:749"
+    healthcheck:
+      test: ["CMD", "kadmin.local", "-q", "listprincs"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   rkerberos:
     build: .
     volumes:
       - .:/app
+      - ./docker/kerberos/krb5.conf:/etc/krb5.conf:ro
+      - krb5-keytab:/etc/krb5.keytab
     working_dir: /app
     environment:
       - BUNDLE_PATH=/gems
+      - KRB5_CONFIG=/etc/krb5.conf
+    depends_on:
+      kerberos:
+        condition: service_healthy
     command: tail -f /dev/null
+
+volumes:
+  krb5-db:
+  krb5-keytab:

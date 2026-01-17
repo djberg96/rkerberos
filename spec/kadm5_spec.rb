@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require 'spec_helper'
 require 'rkerberos'
-require 'dbi/dbrc'
 require 'socket'
 
 describe Kerberos::Kadm5 do
