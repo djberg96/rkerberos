@@ -12,8 +12,9 @@ WORKDIR /app
 # Copy the Gem and extension files
 COPY . /app
 
-# Install dependencies
-RUN bundle install
+
+# Install dependencies and build native extension
+RUN bundle install && rake compile
 
 # Default command
 CMD ["irb"]
