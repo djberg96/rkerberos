@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   kerberos:
     image: mitkrb5/krb5-server:latest
