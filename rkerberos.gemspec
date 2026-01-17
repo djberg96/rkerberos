@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.email      = ['djberg96@gmail.com', 'dominic@cleal.org', 'simon-rubygems@slevermann.de']
   spec.homepage   = 'http://github.com/domcleal/rkerberos'
   spec.summary    = 'A Ruby interface for the the Kerberos library'
-  spec.test_files = Dir['test/test*']
+  spec.test_files = Dir['spec/**/*_spec.rb']
   spec.extensions = ['ext/rkerberos/extconf.rb']
   spec.files      = `git ls-files`.split("\n").reject { |f| f.include?('git') }
 
@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency('rake-compiler')
 
-  spec.add_development_dependency('test-unit', '>= 2.1.0')
+  spec.add_development_dependency('rspec', '>= 3.0')
   spec.add_development_dependency('dbi-dbrc', '>= 1.1.6')
   spec.add_development_dependency('net-ldap')
 
