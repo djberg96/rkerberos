@@ -2,25 +2,33 @@
 
 VALUE cKrb5Principal;
 
-// Free function for the Kerberos::Krb5::Keytab class.
-static void rkrb5_princ_free(RUBY_KRB5_PRINC* ptr){
-  if(!ptr)
-    return;
 
-  if(ptr->principal)
-    krb5_free_principal(ptr->ctx, ptr->principal);
-
-  if(ptr->ctx)
-    krb5_free_context(ptr->ctx);
-
-  free(ptr);
+// TypedData functions for RUBY_KRB5_PRINC
+static void rkrb5_princ_typed_free(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5_PRINC *p = (RUBY_KRB5_PRINC *)ptr;
+  if (p->principal)
+    krb5_free_principal(p->ctx, p->principal);
+  if (p->ctx)
+    krb5_free_context(p->ctx);
+  free(p);
 }
 
-// Allocation function for the Kerberos::Krb5::Keytab class.
+static size_t rkrb5_princ_typed_size(const void *ptr) {
+  return sizeof(RUBY_KRB5_PRINC);
+}
+
+static const rb_data_type_t rkrb5_princ_data_type = {
+  "RUBY_KRB5_PRINC",
+  {NULL, rkrb5_princ_typed_free, rkrb5_princ_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+// Allocation function for the Kerberos::Krb5::Principal class.
 static VALUE rkrb5_princ_allocate(VALUE klass){
-  RUBY_KRB5_PRINC* ptr = malloc(sizeof(RUBY_KRB5_PRINC));
+  RUBY_KRB5_PRINC* ptr = ALLOC(RUBY_KRB5_PRINC);
   memset(ptr, 0, sizeof(RUBY_KRB5_PRINC));
-  return Data_Wrap_Struct(klass, 0, rkrb5_princ_free, ptr);
+  return TypedData_Wrap_Struct(klass, &rkrb5_princ_data_type, ptr);
 }
 
 /*
@@ -41,14 +49,10 @@ static VALUE rkrb5_princ_allocate(VALUE klass){
 static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
   RUBY_KRB5_PRINC* ptr;
   krb5_error_code kerror;
-
-  Data_Get_Struct(self, RUBY_KRB5_PRINC, ptr); 
-
+  TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
   kerror = krb5_init_context(&ptr->ctx);
-
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_init_context failed: %s", error_message(kerror));
-
   if(NIL_P(v_name)){
     rb_iv_set(self, "@principal", Qnil);
   }
@@ -57,13 +61,10 @@ static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
     Check_Type(v_name, T_STRING);
     name = StringValueCStr(v_name);
     kerror = krb5_parse_name(ptr->ctx, name, &ptr->principal);
-
     if(kerror)
       rb_raise(cKrb5Exception, "krb5_parse_name failed: %s", error_message(kerror));
-
     rb_iv_set(self, "@principal", v_name);
   }
-
   rb_iv_set(self, "@attributes", Qnil);
   rb_iv_set(self, "@aux_attributes", Qnil);
   rb_iv_set(self, "@expire_time", Qnil);
@@ -71,17 +72,15 @@ static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
   rb_iv_set(self, "@last_failed", Qnil);
   rb_iv_set(self, "@last_password_change", Qnil);
   rb_iv_set(self, "@last_success", Qnil);
-  rb_iv_set(self, "@max_life", Qnil); 
-  rb_iv_set(self, "@max_renewable_life", Qnil); 
+  rb_iv_set(self, "@max_life", Qnil);
+  rb_iv_set(self, "@max_renewable_life", Qnil);
   rb_iv_set(self, "@mod_date", Qnil);
   rb_iv_set(self, "@mod_name", Qnil);
   rb_iv_set(self, "@password_expiration", Qnil);
   rb_iv_set(self, "@policy", Qnil);
   rb_iv_set(self, "@kvno", Qnil);
-
   if(rb_block_given_p())
     rb_yield(self);
-
   return self;
 }
 
@@ -93,8 +92,7 @@ static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
  */
 static VALUE rkrb5_princ_get_realm(VALUE self){
   RUBY_KRB5_PRINC* ptr;
-  Data_Get_Struct(self, RUBY_KRB5_PRINC, ptr); 
-
+  TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
   return rb_str_new2(krb5_princ_realm(ptr->ctx, ptr->principal)->data);
 }
 
@@ -106,13 +104,9 @@ static VALUE rkrb5_princ_get_realm(VALUE self){
  */
 static VALUE rkrb5_princ_set_realm(VALUE self, VALUE v_realm){
   RUBY_KRB5_PRINC* ptr;
-
-  Data_Get_Struct(self, RUBY_KRB5_PRINC, ptr); 
-
+  TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
   Check_Type(v_realm, T_STRING);
-
   krb5_set_principal_realm(ptr->ctx, ptr->principal, StringValueCStr(v_realm));
-
   return v_realm;
 }
 
@@ -126,17 +120,14 @@ static VALUE rkrb5_princ_equal(VALUE self, VALUE v_other){
   RUBY_KRB5_PRINC* ptr1;
   RUBY_KRB5_PRINC* ptr2;
   VALUE v_bool = Qfalse;
-
-  Data_Get_Struct(self, RUBY_KRB5_PRINC, ptr1); 
-  Data_Get_Struct(v_other, RUBY_KRB5_PRINC, ptr2); 
-
+  TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr1);
+  TypedData_Get_Struct(v_other, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr2);
   if(krb5_principal_compare(ptr1->ctx, ptr1->principal, ptr2->principal))
     v_bool = Qtrue;
-
   return v_bool;
 }
 
-/* 
+/*
  * call-seq:
  *   principal.inspect
  *
