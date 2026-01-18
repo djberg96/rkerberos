@@ -19,31 +19,37 @@ VALUE rb_hash_aref2(VALUE v_hash, const char* key){
   return v_val;
 }
 
-// Free function for the Kerberos::Krb5 class.
-static void rkrb5_free(RUBY_KRB5* ptr){
-  if(!ptr)
-    return;
 
-  if(ptr->keytab)
-    krb5_kt_close(ptr->ctx, ptr->keytab);
-
-  if(ptr->ctx)
-    krb5_free_cred_contents(ptr->ctx, &ptr->creds);
-
-  if(ptr->princ)
-    krb5_free_principal(ptr->ctx, ptr->princ);
-
-  if(ptr->ctx)
-    krb5_free_context(ptr->ctx);
-
-  free(ptr);
+// TypedData functions for RUBY_KRB5
+static void rkrb5_typed_free(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5 *r = (RUBY_KRB5 *)ptr;
+  if (r->keytab)
+    krb5_kt_close(r->ctx, r->keytab);
+  if (r->ctx)
+    krb5_free_cred_contents(r->ctx, &r->creds);
+  if (r->princ)
+    krb5_free_principal(r->ctx, r->princ);
+  if (r->ctx)
+    krb5_free_context(r->ctx);
+  free(r);
 }
+
+static size_t rkrb5_typed_size(const void *ptr) {
+  return sizeof(RUBY_KRB5);
+}
+
+static const rb_data_type_t rkrb5_data_type = {
+  "RUBY_KRB5",
+  {NULL, rkrb5_typed_free, rkrb5_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 // Allocation function for the Kerberos::Krb5 class.
 static VALUE rkrb5_allocate(VALUE klass){
-  RUBY_KRB5* ptr = malloc(sizeof(RUBY_KRB5));
+  RUBY_KRB5* ptr = ALLOC(RUBY_KRB5);
   memset(ptr, 0, sizeof(RUBY_KRB5));
-  return Data_Wrap_Struct(klass, 0, rkrb5_free, ptr);
+  return TypedData_Wrap_Struct(klass, &rkrb5_data_type, ptr);
 }
 
 /*
@@ -57,9 +63,9 @@ static VALUE rkrb5_initialize(VALUE self){
   RUBY_KRB5* ptr;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr); 
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
-  kerror = krb5_init_context(&ptr->ctx); 
+  kerror = krb5_init_context(&ptr->ctx);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
@@ -83,7 +89,7 @@ static VALUE rkrb5_get_default_realm(VALUE self){
   char* realm;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr); 
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
   kerror = krb5_get_default_realm(ptr->ctx, &realm);
 
@@ -106,9 +112,9 @@ static VALUE rkrb5_set_default_realm(int argc, VALUE* argv, VALUE self){
   char* realm;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr); 
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
-  rb_scan_args(argc, argv, "01", &v_realm); 
+  rb_scan_args(argc, argv, "01", &v_realm);
 
   if(NIL_P(v_realm)){
     realm = NULL;
@@ -150,7 +156,7 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
   krb5_get_init_creds_opt* opt;
   krb5_creds cred;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr); 
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
@@ -189,7 +195,7 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
     Check_Type(v_user, T_STRING);
     user = StringValueCStr(v_user);
 
-    kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ); 
+    kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
     if(kerror) {
       krb5_get_init_creds_opt_free(ptr->ctx, opt);
@@ -251,7 +257,7 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
 
   krb5_get_init_creds_opt_free(ptr->ctx, opt);
 
-  return self; 
+  return self;
 }
 
 /* call-seq:
@@ -286,13 +292,13 @@ static VALUE rkrb5_change_password(VALUE self, VALUE v_old, VALUE v_new){
   old_passwd = StringValueCStr(v_old);
   new_passwd = StringValueCStr(v_new);
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr); 
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
   if(!ptr->ctx)
-    rb_raise(cKrb5Exception, "no context has been established"); 
+    rb_raise(cKrb5Exception, "no context has been established");
 
   if(!ptr->princ)
-    rb_raise(cKrb5Exception, "no principal has been established"); 
+    rb_raise(cKrb5Exception, "no principal has been established");
 
   kerror = krb5_get_init_creds_password(
     ptr->ctx,
@@ -340,7 +346,7 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
   char* service;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr); 
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
@@ -360,7 +366,7 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
     service = StringValueCStr(v_service);
   }
 
-  kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ); 
+  kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
@@ -383,7 +389,7 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
   return Qtrue;
 }
 
-/* 
+/*
  * call-seq:
  *   krb5.close
  *
@@ -393,7 +399,7 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
 static VALUE rkrb5_close(VALUE self){
   RUBY_KRB5* ptr;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
   if(ptr->ctx)
     krb5_free_cred_contents(ptr->ctx, &ptr->creds);
@@ -422,10 +428,10 @@ static VALUE rkrb5_close(VALUE self){
 static VALUE rkrb5_get_default_principal(VALUE self){
   char* princ_name;
   RUBY_KRB5* ptr;
-  krb5_ccache ccache;  
+  krb5_ccache ccache;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr); 
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
@@ -481,7 +487,7 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
   krb5_enctype* ktypes;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KRB5, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
@@ -514,10 +520,10 @@ void Init_rkerberos(){
 
   // Allocation functions
   rb_define_alloc_func(cKrb5, rkrb5_allocate);
-  
+
   // Initializers
   rb_define_method(cKrb5, "initialize", rkrb5_initialize, 0);
-  
+
   // Krb5 Methods
   rb_define_method(cKrb5, "change_password", rkrb5_change_password, 2);
   rb_define_method(cKrb5, "close", rkrb5_close, 0);
