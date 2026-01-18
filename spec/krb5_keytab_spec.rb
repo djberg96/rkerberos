@@ -36,8 +36,11 @@ RSpec.describe Kerberos::Krb5::Keytab do
       expect { described_class.new("FILE:/usr/local/var/keytab") }.not_to raise_error
       expect { described_class.new("FILE:/bogus/keytab") }.not_to raise_error
     end
+
     it 'raises error for invalid residual type' do
-      skip('Invalid residual type test skipped for now')
+      expect {
+        described_class.new("BOGUS:/tmp/keytab")
+      }.to raise_error(Kerberos::Krb5::Keytab::Exception)
     end
   end
 end
