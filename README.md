@@ -19,31 +19,49 @@
     `bundle config --global build.rkerberos --with-rkerberos-dir=/usr/local/opt/krb5`
     `bundle install`
 
-# Synopsis
-```ruby
-  require 'rkerberos'
+# Testing
 
-  # Get the default realm name
-  krb5 = Kerberos::Krb5.new
-  puts krb5.default_realm
-  krb5.close
+## Prerequisites
+- Ruby 3.4 or later
+- Docker or Podman
+- docker-compose or podman-compose
 
-  # Get the default keytab name
-  keytab = Kerberos::Krb5::Keytab.new
-  puts keytab.default_name
-  keytab.close
+## Running Tests with Docker
+1. Start the Kerberos and LDAP services:
+   ```bash
+   docker-compose up -d
+   ```
 
-  # Set the password for a given principal
-  kadm5 = Kerberos::Kadm5.new(:principal => 'foo/admin', :password => 'xxxx')
-  kadm5.set_password('someuser', 'abc123')
-  kadm5.close
+2. Run the test suite:
+   ```bash
+   docker-compose run --rm rkerberos-test
+   ```
 
-  # Using the block form
-  Kerberos::Kadm5.new(:principal => 'foo/admin', :password => 'xxxx') do |kadm5|
-    p kadm5.get_principal('someuser')
-    kadm5.set_password('someuser', 'abc123')
-  end
-```
+3. Stop the services when done:
+   ```bash
+   docker-compose down
+   ```
+
+## Running Tests with Podman
+1. Start the Kerberos and LDAP services:
+   ```bash
+   podman-compose up -d
+   ```
+
+2. Run the test suite:
+   ```bash
+   podman-compose run --rm rkerberos-test
+   ```
+
+3. Stop the services when done:
+   ```bash
+   podman-compose down
+   ```
+
+The test environment includes:
+- MIT Kerberos KDC (Key Distribution Center)
+- OpenLDAP server for directory services
+- Pre-configured test principals and keytabs
 
 # Notes
   The rkerberos library is a repackaging of my custom branch of the krb5_auth
