@@ -232,7 +232,7 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
   // Set the credential cache from the supplied Kerberos::Krb5::CredentialsCache
   if(!NIL_P(v_ccache)){
     RUBY_KRB5_CCACHE* ccptr;
-    Data_Get_Struct(v_ccache, RUBY_KRB5_CCACHE, ccptr);
+    TypedData_Get_Struct(v_ccache, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ccptr);
 
     kerror = krb5_get_init_creds_opt_set_out_ccache(ptr->ctx, opt, ccptr->ccache);
     if(kerror) {

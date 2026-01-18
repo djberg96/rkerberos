@@ -1,3 +1,4 @@
+
 #ifndef KRB5_AUTH_H_INCLUDED
 #define KRB5_AUTH_H_INCLUDED
 
@@ -5,8 +6,23 @@
 #include <krb5.h>
 #include <string.h>
 
+// Make the context data type visible to other C files
+extern const rb_data_type_t rkrb5_context_data_type;
+// Make the config data type visible to other C files
+extern const rb_data_type_t rkadm5_config_data_type;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifdef HAVE_KADM5_ADMIN_H
 #include <kadm5/admin.h>
+#endif
+
+// Make the ccache data type visible to other C files
+extern const rb_data_type_t rkrb5_ccache_data_type;
+
+#ifdef __cplusplus
+}
 #endif
 
 #ifdef HAVE_KADM5_ADMIN_H

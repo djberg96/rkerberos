@@ -3,23 +3,32 @@
 VALUE cKadm5Config;
 VALUE cKeySalt;
 
-static void rkadm5_config_free(RUBY_KADM5_CONFIG* ptr){
-  if(!ptr)
-    return;
 
-  kadm5_free_config_params(ptr->ctx, &ptr->config);
-
-  if(ptr->ctx)
-    krb5_free_context(ptr->ctx);
-
-  free(ptr);
+// TypedData functions for RUBY_KADM5_CONFIG
+static void rkadm5_config_typed_free(void *ptr) {
+  if (!ptr) return;
+  RUBY_KADM5_CONFIG *c = (RUBY_KADM5_CONFIG *)ptr;
+  kadm5_free_config_params(c->ctx, &c->config);
+  if (c->ctx)
+    krb5_free_context(c->ctx);
+  free(c);
 }
+
+static size_t rkadm5_config_typed_size(const void *ptr) {
+  return sizeof(RUBY_KADM5_CONFIG);
+}
+
+const rb_data_type_t rkadm5_config_data_type = {
+  "RUBY_KADM5_CONFIG",
+  {NULL, rkadm5_config_typed_free, rkadm5_config_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 // Allocation function for the Kerberos::Krb5 class.
 static VALUE rkadm5_config_allocate(VALUE klass){
-  RUBY_KADM5_CONFIG* ptr = malloc(sizeof(RUBY_KADM5_CONFIG));
+  RUBY_KADM5_CONFIG* ptr = ALLOC(RUBY_KADM5_CONFIG);
   memset(ptr, 0, sizeof(RUBY_KADM5_CONFIG));
-  return Data_Wrap_Struct(klass, 0, rkadm5_config_free, ptr);
+  return TypedData_Wrap_Struct(klass, &rkadm5_config_data_type, ptr);
 }
 
 // Helper function to create a KeySalt instance
@@ -43,7 +52,7 @@ static VALUE rkadm5_config_initialize(VALUE self){
   RUBY_KADM5_CONFIG* ptr;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KADM5_CONFIG, ptr);
+  TypedData_Get_Struct(self, RUBY_KADM5_CONFIG, &rkadm5_config_data_type, ptr);
 
   kerror = krb5_init_context(&ptr->ctx);
 

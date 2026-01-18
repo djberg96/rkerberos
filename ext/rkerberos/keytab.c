@@ -52,7 +52,7 @@ static VALUE rkrb5_keytab_each(VALUE self){
   krb5_keytab_entry entry;
   char* principal;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
   kerror = krb5_kt_start_seq_get(
     ptr->ctx,
@@ -105,7 +105,7 @@ static VALUE rkrb5_keytab_default_name(VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
   VALUE v_default_name;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
   kerror = krb5_kt_default_name(ptr->ctx, default_name, MAX_KEYTAB_NAME_LEN);
 
@@ -149,7 +149,7 @@ static VALUE rkrb5_keytab_remove_entry(int argc, VALUE* argv, VALUE self){
   char* name;
   VALUE v_name, v_vno, v_enctype;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
   rb_scan_args(argc, argv, "12", &v_name, &v_vno, &v_enctype);
 
@@ -196,7 +196,7 @@ static VALUE rkrb5_keytab_add_entry(int argc, VALUE* argv, VALUE self){
   char* name;
   VALUE v_name, v_vno, v_enctype;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
   rb_scan_args(argc, argv, "12", &v_name, &v_vno, &v_enctype);
 
