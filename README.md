@@ -2,6 +2,24 @@
   The rkerberos library provides a Ruby interface for Kerberos.
 
 # Requirements
+
+# Linux
+   Install krb5 development libraries using your package manager. For example:
+
+      # Debian/Ubuntu
+      sudo apt-get install libkrb5-dev
+
+      # Fedora/RHEL
+      sudo dnf install krb5-devel
+
+   Then install this gem:
+
+      gem install rkerberos
+
+   or if using bundler:
+
+      bundle install
+
   Kerberos 1.7.0 or later, including admin header and library files.
 
 # OS X
@@ -98,4 +116,4 @@ The test environment includes:
 * Simon Levermann (maintainer)
 
 # License
-  rkerberos is distributed under the Artistic 2.0 license.
+  rkerberos is distributed under the Artistic-2.0 license.
