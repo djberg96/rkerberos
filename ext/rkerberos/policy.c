@@ -62,12 +62,12 @@ static VALUE rkadm5_policy_init(VALUE self, VALUE v_options){
   if(RTEST(rb_funcall(v_options, rb_intern("empty?"), 0, 0)))
     rb_raise(rb_eArgError, "no policy options provided");
 
-  v_name       = rb_hash_aref2(v_options, "name");
-  v_minlife    = rb_hash_aref2(v_options, "min_life");
-  v_maxlife    = rb_hash_aref2(v_options, "max_life");
-  v_minlength  = rb_hash_aref2(v_options, "min_length");
-  v_minclasses = rb_hash_aref2(v_options, "min_classes");
-  v_historynum = rb_hash_aref2(v_options, "history_num");
+  v_name       = rb_hash_aref2(v_options, rb_str_new_cstr("name"));
+  v_minlife    = rb_hash_aref2(v_options, rb_str_new_cstr("min_life"));
+  v_maxlife    = rb_hash_aref2(v_options, rb_str_new_cstr("max_life"));
+  v_minlength  = rb_hash_aref2(v_options, rb_str_new_cstr("min_length"));
+  v_minclasses = rb_hash_aref2(v_options, rb_str_new_cstr("min_classes"));
+  v_historynum = rb_hash_aref2(v_options, rb_str_new_cstr("history_num"));
 
   if(NIL_P(v_name)){
     rb_raise(rb_eArgError, "name policy option is mandatory");

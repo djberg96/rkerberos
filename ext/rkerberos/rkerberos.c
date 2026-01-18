@@ -7,14 +7,18 @@ VALUE cKrb5Exception;
 // Function prototypes
 static VALUE rkrb5_close(VALUE);
 
-VALUE rb_hash_aref2(VALUE v_hash, const char* key){
-  VALUE v_key, v_val;
+VALUE rb_hash_aref2(VALUE v_hash, VALUE v_key){
+  VALUE v_val;
 
-  v_key = rb_str_new2(key);
   v_val = rb_hash_aref(v_hash, v_key);
 
-  if(NIL_P(v_val))
-    v_val = rb_hash_aref(v_hash, ID2SYM(rb_intern(key)));
+  if(NIL_P(v_val)){
+    if (RB_TYPE_P(v_key, T_STRING)) {
+      v_val = rb_hash_aref(v_hash, rb_str_intern(v_key));
+    } else if (RB_TYPE_P(v_key, T_SYMBOL)) {
+      v_val = rb_hash_aref(v_hash, rb_sym2str(v_key));
+    }
+  }
 
   return v_val;
 }
