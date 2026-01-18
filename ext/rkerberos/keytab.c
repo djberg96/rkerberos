@@ -403,7 +403,8 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
   }
   else{
     Check_Type(v_keytab_name, T_STRING);
-    strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN);
+    strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN - 1);
+    keytab_name[MAX_KEYTAB_NAME_LEN - 1] = '\0';
   }
 
   kerror = krb5_kt_resolve(

@@ -214,7 +214,8 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
   }
   else{
     Check_Type(v_keytab_name, T_STRING);
-    strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN);
+    strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN - 1);
+    keytab_name[MAX_KEYTAB_NAME_LEN - 1] = '\0';
   }
 
   kerror = krb5_kt_resolve(
