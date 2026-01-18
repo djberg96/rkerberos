@@ -68,7 +68,7 @@ static VALUE rkrb5_kt_entry_inspect(VALUE self){
   return v_str;
 }
 
-void Init_keytab_entry(){
+void Init_keytab_entry(void){
   // The Kerberos::Krb5::Keytab::Entry class encapsulates a Kerberos keytab entry.
   cKrb5KtEntry = rb_define_class_under(cKrb5Keytab, "Entry", rb_cObject);
 

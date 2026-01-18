@@ -161,7 +161,7 @@ static VALUE rkadm5_policy_inspect(VALUE self){
   return v_str;
 }
 
-void Init_policy(){
+void Init_policy(void){
   /* The Kerberos::Kadm5::Policy class encapsulates a Kerberos policy. */
   cKadm5Policy = rb_define_class_under(cKadm5, "Policy", rb_cObject);
 

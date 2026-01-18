@@ -236,7 +236,7 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
   return v_bool;
 }
 
-void Init_ccache(){
+void Init_ccache(void){
   /* The Kerberos::Krb5::CredentialsCache class encapsulates a Kerberos credentials cache. */
   cKrb5CCache = rb_define_class_under(cKrb5, "CredentialsCache", rb_cObject);
 

@@ -288,7 +288,7 @@ static VALUE rkadm5_config_inspect(VALUE self){
   return v_str;
 }
 
-void Init_config(){
+void Init_config(void){
   // Define Config class
   cKadm5Config = rb_define_class_under(cKadm5, "Config", rb_cObject);
 

@@ -72,7 +72,7 @@ static VALUE rkrb5_context_initialize(VALUE self){
   return self;
 }
 
-void Init_context(){
+void Init_context(void){
   /* The Kerberos::Krb5::Context class encapsulates a Kerberos context. */
   cKrb5Context = rb_define_class_under(cKrb5, "Context", rb_cObject);
 

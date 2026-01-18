@@ -1093,7 +1093,7 @@ void add_tl_data(krb5_int16 *n_tl_datap, krb5_tl_data **tl_datap,
   (*n_tl_datap)++;
 }
 
-void Init_kadm5(){
+void Init_kadm5(void){
   /* The Kadm5 class encapsulates administrative Kerberos functions. */
   cKadm5 = rb_define_class_under(mKerberos, "Kadm5", rb_cObject);
 

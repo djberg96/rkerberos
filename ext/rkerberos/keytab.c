@@ -479,7 +479,7 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
   return Qnil;
 }
 
-void Init_keytab(){
+void Init_keytab(void){
   /* The Kerberos::Krb5::Keytab class encapsulates a Kerberos keytab. */
   cKrb5Keytab = rb_define_class_under(cKrb5, "Keytab", rb_cObject);
 

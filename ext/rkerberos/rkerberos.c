@@ -518,7 +518,7 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
   return v_enctypes;
 }
 
-void Init_rkerberos(){
+void Init_rkerberos(void){
   mKerberos      = rb_define_module("Kerberos");
   cKrb5          = rb_define_class_under(mKerberos, "Krb5", rb_cObject);
   cKrb5Exception = rb_define_class_under(cKrb5, "Exception", rb_eStandardError);

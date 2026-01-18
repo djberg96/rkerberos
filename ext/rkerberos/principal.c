@@ -205,7 +205,7 @@ static VALUE rkrb5_princ_inspect(VALUE self){
   return v_str;
 }
 
-void Init_principal(){
+void Init_principal(void){
   /* The Kerberos::Krb5::Principal class encapsulates a Kerberos principal. */
   cKrb5Principal = rb_define_class_under(cKrb5, "Principal", rb_cObject);
 
