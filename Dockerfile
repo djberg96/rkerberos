@@ -1,11 +1,11 @@
 # Dockerfile for rkerberos Ruby gem testing
-FROM ruby:3.2
+FROM ruby:3.4
 
 # Install MIT Kerberos, KDC, admin server, and build tools
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      libkrb5-dev krb5-user krb5-kdc krb5-admin-server rake build-essential && \
-    rm -rf /var/lib/apt/lists/*
+        apt-get install -y --no-install-recommends \
+            libkrb5-dev krb5-user krb5-kdc krb5-admin-server rake build-essential && \
+        rm -rf /var/lib/apt/lists/*
 
 # Set up a working directory
 WORKDIR /app
