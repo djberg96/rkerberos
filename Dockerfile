@@ -10,6 +10,10 @@ RUN apt-get update && \
 # Set up a working directory
 WORKDIR /app
 
+# Set admin credentials for tests (matches docker-compose.yml)
+ENV KRB5_ADMIN_PRINCIPAL=admin/admin@EXAMPLE.COM
+ENV KRB5_ADMIN_PASSWORD=adminpassword
+
 # Copy the gemspec and Gemfile for dependency installation
 COPY Gemfile rkerberos.gemspec ./
 
