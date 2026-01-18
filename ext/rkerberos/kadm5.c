@@ -406,7 +406,7 @@ static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_pr
     rb_iv_set(v_principal, "@password_expiration", rb_time_new(ent->pw_expiration, 0));
 
   if(ent->policy)
-    rb_iv_set(v_principal, "policy", rb_str_new2(ent->policy));
+    rb_iv_set(v_principal, "@policy", rb_str_new2(ent->policy));
 
   return v_principal;
 }
