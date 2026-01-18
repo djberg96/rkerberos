@@ -71,20 +71,15 @@ namespace :sample do
   end
 end
 
-task :default => ['test:all']
-task :test => ['test:all']
-
 # RSpec tasks
-if defined?(RSpec)
-  desc 'Run all specs'
-  RSpec::Core::RakeTask.new(:spec) do |t|
-    t.pattern = 'spec/**/*_spec.rb'
-  end
-  task :default => :spec
-  task :test => :spec
-else
-  task :default do
-    puts 'RSpec is not available. Please install the rspec gem.'
-  end
-  task :test => :default
+desc 'Run all specs'
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.pattern = 'spec/**/*_spec.rb'
 end
+
+# Clean up afterwards
+Rake::Task[:spec].enhance do
+  Rake::Task[:clean].invoke
+end
+
+task :default => [:compile, :spec]
