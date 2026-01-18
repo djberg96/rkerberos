@@ -13,8 +13,9 @@ WORKDIR /app
 # Copy the gemspec and Gemfile for dependency installation
 COPY Gemfile rkerberos.gemspec ./
 
-# Install gem dependencies
-RUN bundle install
+
+# Install gem dependencies and RSpec
+RUN bundle install && gem install rspec
 
 
 # Create a more complete krb5.conf for testing (with kadmin support)
@@ -38,5 +39,5 @@ RUN if [ ! -f /var/lib/krb5kdc/principal ]; then \
 # Copy the rest of the code
 COPY . .
 
-# Start KDC and admin server in the background, wait for readiness, run tests, then keep container alive
-CMD bash -c "/usr/sbin/krb5kdc & /usr/sbin/kadmind & for i in \$(seq 1 10); do echo 'Waiting for KDC...'; kadmin.local -q 'listprincs' && break; sleep 1; done; rake test; fg || true"
+# Start KDC and admin server in the background, wait for readiness, run RSpec, then keep container alive
+CMD bash -c "/usr/sbin/krb5kdc & /usr/sbin/kadmind & for i in \$(seq 1 10); do echo 'Waiting for KDC...'; kadmin.local -q 'listprincs' && break; sleep 1; done; rspec --format documentation || true; fg || true"
