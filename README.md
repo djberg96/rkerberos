@@ -58,6 +58,19 @@
    podman-compose down
    ```
 
+## Local Development
+If you make changes to the Ruby code or C extensions:
+
+1. Rebuild the test container:
+   ```bash
+   podman-compose build --no-cache rkerberos-test
+   ```
+
+2. Run the tests again:
+   ```bash
+   podman-compose run --rm rkerberos-test
+   ```
+
 The test environment includes:
 - MIT Kerberos KDC (Key Distribution Center)
 - OpenLDAP server for directory services
