@@ -1,7 +1,7 @@
 FROM debian:bullseye
 
 RUN apt-get update && \
-    apt-get install -y krb5-kdc krb5-admin-server krb5-user krb5-kdc-ldap && \
+    apt-get install -y krb5-kdc krb5-admin-server krb5-user krb5-kdc-ldap ldap-utils expect && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy configuration files
