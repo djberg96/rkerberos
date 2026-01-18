@@ -77,7 +77,9 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
   Check_Type(v_opts, T_HASH);
 
+  // Accept both string and symbol keys
   v_principal = rb_hash_aref2(v_opts, "principal");
+  if (NIL_P(v_principal)) v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
 
   // Principal must be specified
   if(NIL_P(v_principal))
@@ -87,7 +89,9 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   user = StringValueCStr(v_principal);
 
   v_password = rb_hash_aref2(v_opts, "password");
+  if (NIL_P(v_password)) v_password = rb_hash_aref2(v_opts, ID2SYM(rb_intern("password")));
   v_keytab = rb_hash_aref2(v_opts, "keytab");
+  if (NIL_P(v_keytab)) v_keytab = rb_hash_aref2(v_opts, ID2SYM(rb_intern("keytab")));
 
   if(RTEST(v_password) && RTEST(v_keytab))
     rb_raise(rb_eArgError, "cannot use both a password and a keytab");
@@ -98,6 +102,7 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   }
 
   v_service = rb_hash_aref2(v_opts, "service");
+  if (NIL_P(v_service)) v_service = rb_hash_aref2(v_opts, ID2SYM(rb_intern("service")));
 
   if(NIL_P(v_service)){
     service = (char *) "kadmin/admin";
@@ -108,6 +113,7 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   }
 
   v_db_args = rb_hash_aref2(v_opts, "db_args");
+  if (NIL_P(v_db_args)) v_db_args = rb_hash_aref2(v_opts, ID2SYM(rb_intern("db_args")));
   ptr->db_args = parse_db_args(v_db_args);
 
   // Normally I would wait to initialize the context, but we might need it
@@ -259,7 +265,7 @@ static VALUE rkadm5_set_pwexpire(VALUE self, VALUE v_user, VALUE v_pwexpire){
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
 
-  kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ); 
+  kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
   if(kerror)
     rb_raise(cKadm5Exception, "krb5_parse_name: %s", error_message(kerror));
