@@ -128,7 +128,7 @@ static VALUE rkrb5_keytab_default_name(VALUE self){
 static VALUE rkrb5_keytab_close(VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
   if(ptr->ctx)
     krb5_free_cred_contents(ptr->ctx, &ptr->creds);
@@ -259,7 +259,7 @@ static VALUE rkrb5_keytab_get_entry(int argc, VALUE* argv, VALUE self){
   char* name;
   VALUE v_principal, v_vno, v_enctype, v_entry;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
   rb_scan_args(argc, argv, "12", &v_principal, &v_vno, &v_enctype);
 
@@ -323,7 +323,7 @@ static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
   char keytab_name[MAX_KEYTAB_NAME_LEN];
   VALUE v_keytab_name = Qnil;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
   rb_scan_args(argc, argv, "01", &v_keytab_name);
 
