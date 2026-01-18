@@ -2,26 +2,38 @@
 
 VALUE cKrb5Keytab, cKrb5KeytabException;
 
-// Free function for the Kerberos::Krb5::Keytab class.
-static void rkrb5_keytab_free(RUBY_KRB5_KEYTAB* ptr){
-  if(!ptr)
-    return;
 
-  if(ptr->keytab)
-    krb5_kt_close(ptr->ctx, ptr->keytab);
+// TypedData functions for RUBY_KRB5_KEYTAB
+void rkrb5_keytab_typed_free(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5_KEYTAB *kt = (RUBY_KRB5_KEYTAB *)ptr;
+  if (kt->keytab)
+    krb5_kt_close(kt->ctx, kt->keytab);
+  if (kt->ctx)
+    krb5_free_cred_contents(kt->ctx, &kt->creds);
+  if (kt->ctx)
+    krb5_free_context(kt->ctx);
+  free(kt);
+}
 
-  if(ptr->ctx)
-    krb5_free_context(ptr->ctx);
+size_t rkrb5_keytab_typed_size(const void *ptr) {
+  return sizeof(RUBY_KRB5_KEYTAB);
+}
 
-  free(ptr);
+// Must NOT be static so it is exported
+const rb_data_type_t rkrb5_keytab_data_type = {
+  "RUBY_KRB5_KEYTAB",
+  {NULL, rkrb5_keytab_typed_free, rkrb5_keytab_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+VALUE rkrb5_keytab_allocate(VALUE klass){
+  RUBY_KRB5_KEYTAB* ptr = ALLOC(RUBY_KRB5_KEYTAB);
+  memset(ptr, 0, sizeof(RUBY_KRB5_KEYTAB));
+  return TypedData_Wrap_Struct(klass, &rkrb5_keytab_data_type, ptr);
 }
 
 // Allocation function for the Kerberos::Krb5::Keytab class.
-static VALUE rkrb5_keytab_allocate(VALUE klass){
-  RUBY_KRB5_KEYTAB* ptr = malloc(sizeof(RUBY_KRB5_KEYTAB));
-  memset(ptr, 0, sizeof(RUBY_KRB5_KEYTAB));
-  return Data_Wrap_Struct(klass, 0, rkrb5_keytab_free, ptr);
-}
 
 /*
  * call-seq:
@@ -40,7 +52,7 @@ static VALUE rkrb5_keytab_each(VALUE self){
   krb5_keytab_entry entry;
   char* principal;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr); 
+  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
 
   kerror = krb5_kt_start_seq_get(
     ptr->ctx,
@@ -77,7 +89,7 @@ static VALUE rkrb5_keytab_each(VALUE self){
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_kt_end_seq_get: %s", error_message(kerror));
 
-  return self; 
+  return self;
 }
 
 /*
@@ -93,8 +105,8 @@ static VALUE rkrb5_keytab_default_name(VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
   VALUE v_default_name;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr); 
-  
+  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
+
   kerror = krb5_kt_default_name(ptr->ctx, default_name, MAX_KEYTAB_NAME_LEN);
 
   if(kerror)
@@ -137,7 +149,7 @@ static VALUE rkrb5_keytab_remove_entry(int argc, VALUE* argv, VALUE self){
   char* name;
   VALUE v_name, v_vno, v_enctype;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr); 
+  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
 
   rb_scan_args(argc, argv, "12", &v_name, &v_vno, &v_enctype);
 
@@ -184,7 +196,7 @@ static VALUE rkrb5_keytab_add_entry(int argc, VALUE* argv, VALUE self){
   char* name;
   VALUE v_name, v_vno, v_enctype;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr); 
+  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
 
   rb_scan_args(argc, argv, "12", &v_name, &v_vno, &v_enctype);
 
@@ -247,7 +259,7 @@ static VALUE rkrb5_keytab_get_entry(int argc, VALUE* argv, VALUE self){
   char* name;
   VALUE v_principal, v_vno, v_enctype, v_entry;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr); 
+  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
 
   rb_scan_args(argc, argv, "12", &v_principal, &v_vno, &v_enctype);
 
@@ -311,11 +323,11 @@ static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
   char keytab_name[MAX_KEYTAB_NAME_LEN];
   VALUE v_keytab_name = Qnil;
 
-  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr); 
+  Data_Get_Struct(self, RUBY_KRB5_KEYTAB, ptr);
 
   rb_scan_args(argc, argv, "01", &v_keytab_name);
 
-  kerror = krb5_init_context(&ptr->ctx); 
+  kerror = krb5_init_context(&ptr->ctx);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
@@ -328,7 +340,7 @@ static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
       rb_raise(cKrb5Exception, "krb5_kt_default_name: %s", error_message(kerror));
 
     rb_iv_set(self, "@name", rb_str_new2(keytab_name));
-  } 
+  }
   else{
     Check_Type(v_keytab_name, T_STRING);
     strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN);
@@ -373,7 +385,7 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
 
   rb_scan_args(argc, argv, "01", &v_keytab_name);
 
-  kerror = krb5_init_context(&context); 
+  kerror = krb5_init_context(&context);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
@@ -388,7 +400,7 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
 
       rb_raise(cKrb5Exception, "krb5_kt_default_name: %s", error_message(kerror));
     }
-  } 
+  }
   else{
     Check_Type(v_keytab_name, T_STRING);
     strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN);
