@@ -9,6 +9,11 @@
 #include <kadm5/admin.h>
 #endif
 
+#ifdef HAVE_KADM5_ADMIN_H
+// Make the policy data type visible to other C files
+extern const rb_data_type_t rkadm5_policy_data_type;
+#endif
+
 // Function Prototypes
 void Init_context();
 #ifdef HAVE_KADM5_ADMIN_H

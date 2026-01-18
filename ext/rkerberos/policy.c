@@ -17,7 +17,7 @@ static size_t rkadm5_policy_typed_size(const void *ptr) {
   return sizeof(RUBY_KADM5_POLICY);
 }
 
-static const rb_data_type_t rkadm5_policy_data_type = {
+const rb_data_type_t rkadm5_policy_data_type = {
   "RUBY_KADM5_POLICY",
   {NULL, rkadm5_policy_typed_free, rkadm5_policy_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
