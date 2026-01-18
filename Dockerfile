@@ -35,5 +35,8 @@ RUN mkdir -p /etc/krb5kdc && \
 # Copy the rest of the code
 COPY . .
 
+# Compile the C extension
+RUN rake compile
+
 # Run RSpec tests
 CMD ["bundle", "exec", "rspec"]
