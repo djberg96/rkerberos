@@ -42,6 +42,8 @@
    docker-compose down
    ```
 
+   Add the `--remove-orphans` switch if it's being a pain.
+
 ## Running Tests with Podman
 1. Start the Kerberos and LDAP services:
    ```bash
