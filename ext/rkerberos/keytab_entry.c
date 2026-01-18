@@ -2,13 +2,6 @@
 
 VALUE cKrb5KtEntry;
 
-// Free function for the Kerberos::Krb5::Keytab::Entry class.
-static void rkrb5_kt_entry_free(RUBY_KRB5_KT_ENTRY* ptr){
-  if(!ptr)
-    return;
-
-  free(ptr);
-}
 
 // Allocation function for the Kerberos::Krb5::Keytab::Entry class.
 // TypedData for Kerberos::Krb5::Keytab::Entry
