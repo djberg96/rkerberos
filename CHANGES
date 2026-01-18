@@ -1,3 +1,10 @@
+ = 0.2.0 - 18-Jan-2026
+* Added Docker and Podman support for running tests in isolated environments with Kerberos and OpenLDAP services.
+* Updated documentation with modern testing and development workflows, including container-based instructions.
+* Improved compatibility for Ruby 3.4 and later.
+* Enhanced build and test automation using docker-compose and podman-compose.
+* Various bug fixes, code cleanups, and test improvements.
+
 = 0.1.5 - 17-Oct-2016
 * Fix build error on Ruby 2.0.0/2.1 with CFLAGS concatenation
 
