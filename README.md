@@ -34,7 +34,7 @@
 
 2. Run the test suite:
    ```bash
-   docker-compose run --rm rkerberos-test
+   docker-compose run --rm rkerberos-test bundle exec rspec
    ```
 
 3. Stop the services when done:
