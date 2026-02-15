@@ -1,9 +1,6 @@
 require 'rake'
-begin
-  require 'rspec/core/rake_task'
-rescue LoadError
-  # RSpec not available
-end
+require 'fileutils'
+require 'rspec/core/rake_task'
 require 'rake/extensiontask'
 require 'rake/clean'
 require 'rbconfig'
@@ -86,6 +83,7 @@ namespace :spec do
 
     puts "Using #{compose} to run containerized specs..."
 
+    FileUtils.rm_rf('Gemfile.lock')
     sh "#{compose} build --no-cache rkerberos-test"
     sh "#{compose} run --rm rkerberos-test"
   end
