@@ -91,6 +91,15 @@ If you make changes to the Ruby code or C extensions:
    podman-compose run --rm rkerberos-test
    ```
 
+Run containerized tests via Rake
+
+- A convenience Rake task runs the same containerized workflow used above. It prefers `podman-compose` and falls back to `docker-compose`.
+
+```bash
+# build image and run RSpec inside the test container
+rake spec:compose
+```
+
 The test environment includes:
 - MIT Kerberos KDC (Key Distribution Center)
 - OpenLDAP server for directory services
