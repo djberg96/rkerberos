@@ -85,6 +85,21 @@ RSpec.describe Kerberos::Krb5 do
       expect(ccache.primary_principal).to be_a(String)
       expect(ccache.primary_principal).to include('@')
     end
+
+    it 'provides authenticate! which acquires+verifies (Zanarotti mitigation)' do
+      expect(krb5).to respond_to(:authenticate!)
+      expect(krb5.authenticate!(user, 'changeme')).to be true
+      expect(krb5.verify_init_creds).to be true
+    end
+
+    it 'accepts an optional service argument' do
+      expect { krb5.authenticate!(user, 'changeme', 'kadmin/changepw') }.not_to raise_error
+      expect(krb5.verify_init_creds).to be true
+    end
+
+    it 'validates argument types for authenticate!' do
+      expect { krb5.authenticate!(true, true) }.to raise_error(TypeError)
+    end
   end
 
   describe '#get_init_creds_keytab' do
