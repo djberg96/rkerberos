@@ -3,6 +3,8 @@
 
 require 'rkerberos'
 require 'open3'
+require 'pty'
+require 'expect'
 
 RSpec.describe Kerberos::Krb5 do
   before(:all) do
@@ -80,6 +82,41 @@ RSpec.describe Kerberos::Krb5 do
       ccache = Kerberos::Krb5::CredentialsCache.new
       krb5.get_init_creds_password(user, 'changeme')
       expect(krb5.verify_init_creds(nil, nil, ccache)).to be true
+      expect(ccache.primary_principal).to be_a(String)
+      expect(ccache.primary_principal).to include('@')
+    end
+  end
+
+  describe '#get_init_creds_keytab' do
+    before(:each) do
+      @kt_file = File.join(Dir.tmpdir, "test_get_init_creds_#{Process.pid}_#{rand(10000)}.keytab")
+
+      PTY.spawn('ktutil') do |reader, writer, _|
+        reader.expect(/ktutil:\s+/)
+        writer.puts("add_entry -password -p testuser1@#{@realm} -k 1 -e aes128-cts-hmac-sha1-96")
+        reader.expect(/Password for #{Regexp.quote("testuser1@#{@realm}")}:\s+/)
+        writer.puts('changeme')
+        reader.expect(/ktutil:\s+/)
+        writer.puts("wkt #{@kt_file}")
+        reader.expect(/ktutil:\s+/)
+        writer.puts('quit')
+      end
+    end
+
+    it 'responds to get_init_creds_keytab' do
+      expect(krb5).to respond_to(:get_init_creds_keytab)
+    end
+
+    it 'acquires credentials for a principal from a supplied keytab file' do
+      kt_name = "FILE:#{@kt_file}"
+      expect { krb5.get_init_creds_keytab(user, kt_name) }.not_to raise_error
+      expect(krb5.verify_init_creds).to be true
+    end
+
+    it 'accepts a CredentialsCache to receive credentials' do
+      ccache = Kerberos::Krb5::CredentialsCache.new
+      kt_name = "FILE:#{@kt_file}"
+      expect { krb5.get_init_creds_keytab(user, kt_name, nil, ccache) }.not_to raise_error
       expect(ccache.primary_principal).to be_a(String)
       expect(ccache.primary_principal).to include('@')
     end
