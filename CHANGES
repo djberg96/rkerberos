@@ -1,4 +1,4 @@
- = 0.2.0 - 18-Jan-2026
+ = 0.2.0 - 14-Feb-2026
 * Added Docker and Podman support for running tests in isolated environments with Kerberos and OpenLDAP services.
 * Updated documentation with modern testing and development workflows, including container-based instructions.
 * Improved compatibility for Ruby 3.4 and later.
