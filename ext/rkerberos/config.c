@@ -1,24 +1,43 @@
 #include <rkerberos.h>
 
 VALUE cKadm5Config;
+VALUE cKeySalt;
 
-static void rkadm5_config_free(RUBY_KADM5_CONFIG* ptr){
-  if(!ptr)
-    return;
 
-  kadm5_free_config_params(ptr->ctx, &ptr->config);
-
-  if(ptr->ctx)
-    krb5_free_context(ptr->ctx);
-
-  free(ptr);
+// TypedData functions for RUBY_KADM5_CONFIG
+static void rkadm5_config_typed_free(void *ptr) {
+  if (!ptr) return;
+  RUBY_KADM5_CONFIG *c = (RUBY_KADM5_CONFIG *)ptr;
+  kadm5_free_config_params(c->ctx, &c->config);
+  if (c->ctx)
+    krb5_free_context(c->ctx);
+  free(c);
 }
+
+static size_t rkadm5_config_typed_size(const void *ptr) {
+  return sizeof(RUBY_KADM5_CONFIG);
+}
+
+const rb_data_type_t rkadm5_config_data_type = {
+  "RUBY_KADM5_CONFIG",
+  {NULL, rkadm5_config_typed_free, rkadm5_config_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 // Allocation function for the Kerberos::Krb5 class.
 static VALUE rkadm5_config_allocate(VALUE klass){
-  RUBY_KADM5_CONFIG* ptr = malloc(sizeof(RUBY_KADM5_CONFIG));
+  RUBY_KADM5_CONFIG* ptr = ALLOC(RUBY_KADM5_CONFIG);
   memset(ptr, 0, sizeof(RUBY_KADM5_CONFIG));
-  return Data_Wrap_Struct(klass, 0, rkadm5_config_free, ptr);
+  return TypedData_Wrap_Struct(klass, &rkadm5_config_data_type, ptr);
+}
+
+// Helper function to create a KeySalt instance
+static VALUE rkeysalt_new(krb5_enctype enctype, krb5_int32 salttype){
+  VALUE obj = rb_class_new_instance(0, NULL, cKeySalt);
+  rb_iv_set(obj, "@enctype", INT2FIX(enctype));
+  rb_iv_set(obj, "@salttype", INT2FIX(salttype));
+  rb_obj_freeze(obj);
+  return obj;
 }
 
 /*
@@ -33,7 +52,7 @@ static VALUE rkadm5_config_initialize(VALUE self){
   RUBY_KADM5_CONFIG* ptr;
   krb5_error_code kerror;
 
-  Data_Get_Struct(self, RUBY_KADM5_CONFIG, ptr); 
+  TypedData_Get_Struct(self, RUBY_KADM5_CONFIG, &rkadm5_config_data_type, ptr);
 
   kerror = krb5_init_context(&ptr->ctx);
 
@@ -150,11 +169,22 @@ static VALUE rkadm5_config_initialize(VALUE self){
   else
     rb_iv_set(self, "@num_keysalts", Qnil);
 
-  // Not very useful at the moment. How do you iterate over an enum in C?
-  if(ptr->config.keysalts)
-    rb_iv_set(self, "@keysalts", INT2FIX(ptr->config.keysalts));
-  else
+  if(ptr->config.keysalts && ptr->config.num_keysalts > 0){
+    VALUE keysalts_array = rb_ary_new();
+    int i;
+
+    for(i = 0; i < ptr->config.num_keysalts; i++) {
+      VALUE keysalt = rkeysalt_new(
+        ptr->config.keysalts[i].ks_enctype,
+        ptr->config.keysalts[i].ks_salttype
+      );
+      rb_ary_push(keysalts_array, keysalt);
+    }
+
+    rb_iv_set(self, "@keysalts", keysalts_array);
+  }else{
     rb_iv_set(self, "@keysalts", Qnil);
+  }
 
   // This is read only data
   rb_obj_freeze(self);
@@ -258,13 +288,14 @@ static VALUE rkadm5_config_inspect(VALUE self){
   return v_str;
 }
 
-void Init_config(){
+void Init_config(void){
+  // Define Config class
   cKadm5Config = rb_define_class_under(cKadm5, "Config", rb_cObject);
 
   // Allocation function
 
   rb_define_alloc_func(cKadm5Config, rkadm5_config_allocate);
-  
+
   // Initializer
 
   rb_define_method(cKadm5Config, "initialize", rkadm5_config_initialize, 0);
@@ -296,4 +327,9 @@ void Init_config(){
   rb_define_attr(cKadm5Config, "num_keysalts", 1, 0);
   rb_define_attr(cKadm5Config, "realm", 1, 0);
   rb_define_attr(cKadm5Config, "stash_file", 1, 0);
+
+  // Define KeySalt class
+  cKeySalt = rb_define_class_under(cKadm5, "KeySalt", rb_cObject);
+  rb_define_attr(cKeySalt, "enctype", 1, 0);
+  rb_define_attr(cKeySalt, "salttype", 1, 0);
 }

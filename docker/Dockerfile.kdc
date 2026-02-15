@@ -1,0 +1,16 @@
+FROM debian:bullseye
+
+RUN apt-get update && \
+    apt-get install -y krb5-kdc krb5-admin-server krb5-user krb5-kdc-ldap ldap-utils expect && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy configuration files
+COPY krb5.conf /etc/krb5.conf
+COPY kdc.conf /etc/krb5kdc/kdc.conf
+COPY kadm5.acl /etc/krb5kdc/kadm5.acl
+
+# Copy entrypoint
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

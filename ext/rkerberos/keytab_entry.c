@@ -2,19 +2,28 @@
 
 VALUE cKrb5KtEntry;
 
-// Free function for the Kerberos::Krb5::Keytab::Entry class.
-static void rkrb5_kt_entry_free(RUBY_KRB5_KT_ENTRY* ptr){
-  if(!ptr)
-    return;
 
+// Allocation function for the Kerberos::Krb5::Keytab::Entry class.
+// TypedData for Kerberos::Krb5::Keytab::Entry
+static void rkrb5_kt_entry_typed_free(void *ptr) {
+  if (!ptr) return;
   free(ptr);
 }
 
-// Allocation function for the Kerberos::Krb5::Keytab::Entry class.
+static size_t rkrb5_kt_entry_typed_size(const void *ptr) {
+  return sizeof(RUBY_KRB5_KT_ENTRY);
+}
+
+static const rb_data_type_t rkrb5_kt_entry_data_type = {
+  "RUBY_KRB5_KT_ENTRY",
+  {NULL, rkrb5_kt_entry_typed_free, rkrb5_kt_entry_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static VALUE rkrb5_kt_entry_allocate(VALUE klass){
-  RUBY_KRB5_KT_ENTRY* ptr = malloc(sizeof(RUBY_KRB5_KT_ENTRY));
+  RUBY_KRB5_KT_ENTRY* ptr = ALLOC(RUBY_KRB5_KT_ENTRY);
   memset(ptr, 0, sizeof(RUBY_KRB5_KT_ENTRY));
-  return Data_Wrap_Struct(klass, 0, rkrb5_kt_entry_free, ptr);
+  return TypedData_Wrap_Struct(klass, &rkrb5_kt_entry_data_type, ptr);
 }
 
 /*
@@ -36,7 +45,7 @@ static VALUE rkrb5_kt_entry_initialize(VALUE self){
 static VALUE rkrb5_kt_entry_inspect(VALUE self){
   VALUE v_str;
 
-  v_str = rb_str_new2("#<"); 
+  v_str = rb_str_new2("#<");
   rb_str_buf_cat2(v_str, rb_obj_classname(self));
   rb_str_buf_cat2(v_str, " ");
 
@@ -59,7 +68,7 @@ static VALUE rkrb5_kt_entry_inspect(VALUE self){
   return v_str;
 }
 
-void Init_keytab_entry(){
+void Init_keytab_entry(void){
   // The Kerberos::Krb5::Keytab::Entry class encapsulates a Kerberos keytab entry.
   cKrb5KtEntry = rb_define_class_under(cKrb5Keytab, "Entry", rb_cObject);
 
@@ -70,7 +79,7 @@ void Init_keytab_entry(){
   rb_define_method(cKrb5KtEntry, "initialize", rkrb5_kt_entry_initialize, 0);
 
   // Instance Methods
-  rb_define_method(cKrb5KtEntry, "inspect", rkrb5_kt_entry_inspect, 0); 
+  rb_define_method(cKrb5KtEntry, "inspect", rkrb5_kt_entry_inspect, 0);
 
   // Accessors
   rb_define_attr(cKrb5KtEntry, "principal", 1, 1);

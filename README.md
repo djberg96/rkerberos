@@ -2,48 +2,99 @@
   The rkerberos library provides a Ruby interface for Kerberos.
 
 # Requirements
+
+# Linux
+   Install krb5 development libraries using your package manager. For example:
+
+      # Debian/Ubuntu
+      sudo apt-get install libkrb5-dev
+
+      # Fedora/RHEL
+      sudo dnf install krb5-devel
+
+   Then install this gem:
+
+      gem install rkerberos
+
+   or if using bundler:
+
+      bundle install
+
   Kerberos 1.7.0 or later, including admin header and library files.
 
-# OS X (10.11)
-  krb5 must be installed from source before installing the rkerberos gem:
-```
-  brew install openssl
-  curl -0 http://web.mit.edu/kerberos/dist/krb5/1.14/krb5-1.14.tar.gz
-  tar -xzf krb5-1.14.tar.gz
-  cd krb5-1.14/src
-  export CPPFLAGS='-I/usr/local/opt/openssl/include'
-  export LDFLAGS='-L/usr/local/opt/openssl/lib'
-  ./configure
-  make
-  make install
-```
-  latest release is here: http://web.mit.edu/kerberos/dist/index.html
+# OS X
+  Install krb5 using homebrew:
 
-# Synopsis
-```ruby
-  require 'rkerberos'
+    `brew install krb5`
 
-  # Get the default realm name
-  krb5 = Kerberos::Krb5.new
-  puts krb5.default_realm
-  krb5.close
+  then install this gem using the homebrew version of krb5:
 
-  # Get the default keytab name
-  keytab = Kerberos::Krb5::Keytab.new
-  puts keytab.default_name
-  keytab.close
+    # Or '/opt/homebrew/opt/krb' depending on your system
+    `gem install rkerberos -- --with-rkerberos-dir=/usr/local/opt/krb5`
 
-  # Set the password for a given principal
-  kadm5 = Kerberos::Kadm5.new(:principal => 'foo/admin', :password => 'xxxx')
-  kadm5.set_password('someuser', 'abc123')
-  kadm5.close
+  or if using bundler:
 
-  # Using the block form
-  Kerberos::Kadm5.new(:principal => 'foo/admin', :password => 'xxxx') do |kadm5|
-    p kadm5.get_principal('someuser')
-    kadm5.set_password('someuser', 'abc123')
-  end
-```
+    `bundle config --global build.rkerberos --with-rkerberos-dir=/usr/local/opt/krb5`
+    `bundle install`
+
+# Testing
+
+## Prerequisites
+- Ruby 3.4 or later
+- Docker or Podman
+- docker-compose or podman-compose
+
+## Running Tests with Docker
+1. Start the Kerberos and LDAP services:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. Run the test suite:
+   ```bash
+   docker-compose run --rm rkerberos-test bundle exec rspec
+   ```
+
+3. Stop the services when done:
+   ```bash
+   docker-compose down
+   ```
+
+   Add the `--remove-orphans` switch if it's being a pain.
+
+## Running Tests with Podman
+1. Start the Kerberos and LDAP services:
+   ```bash
+   podman-compose up -d
+   ```
+
+2. Run the test suite:
+   ```bash
+   podman-compose run --rm rkerberos-test
+   ```
+
+3. Stop the services when done:
+   ```bash
+   podman-compose down
+   ```
+
+## Local Development
+If you make changes to the Ruby code or C extensions:
+
+1. Rebuild the test container:
+   ```bash
+   podman-compose build --no-cache rkerberos-test
+   ```
+
+2. Run the tests again:
+   ```bash
+   podman-compose run --rm rkerberos-test
+   ```
+
+The test environment includes:
+- MIT Kerberos KDC (Key Distribution Center)
+- OpenLDAP server for directory services
+- Pre-configured test principals and keytabs
 
 # Notes
   The rkerberos library is a repackaging of my custom branch of the krb5_auth
@@ -65,4 +116,4 @@
 * Simon Levermann (maintainer)
 
 # License
-  rkerberos is distributed under the Artistic 2.0 license.
+  rkerberos is distributed under the Artistic-2.0 license.

@@ -1,23 +1,33 @@
+#ifdef HAVE_KADM5_ADMIN_H
 #include <rkerberos.h>
 
 VALUE cKadm5Policy;
 
-// Free function for the Kerberos::Krb5::CCache class.
-static void rkadm5_policy_free(RUBY_KADM5_POLICY* ptr){
-  if(!ptr)
-    return;
 
-  if(ptr->ctx)
-    krb5_free_context(ptr->ctx);
-
-  free(ptr);
+// TypedData functions for RUBY_KADM5_POLICY
+static void rkadm5_policy_typed_free(void *ptr) {
+  if (!ptr) return;
+  RUBY_KADM5_POLICY *p = (RUBY_KADM5_POLICY *)ptr;
+  if (p->ctx)
+    krb5_free_context(p->ctx);
+  free(p);
 }
+
+static size_t rkadm5_policy_typed_size(const void *ptr) {
+  return sizeof(RUBY_KADM5_POLICY);
+}
+
+const rb_data_type_t rkadm5_policy_data_type = {
+  "RUBY_KADM5_POLICY",
+  {NULL, rkadm5_policy_typed_free, rkadm5_policy_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 // Allocation function for the Kerberos::Kadm5::Policy class.
 static VALUE rkadm5_policy_allocate(VALUE klass){
-  RUBY_KADM5_POLICY* ptr = malloc(sizeof(RUBY_KADM5_POLICY));
+  RUBY_KADM5_POLICY* ptr = ALLOC(RUBY_KADM5_POLICY);
   memset(ptr, 0, sizeof(RUBY_KADM5_POLICY));
-  return Data_Wrap_Struct(klass, 0, rkadm5_policy_free, ptr);
+  return TypedData_Wrap_Struct(klass, &rkadm5_policy_data_type, ptr);
 }
 
 /*
@@ -31,7 +41,7 @@ static VALUE rkadm5_policy_allocate(VALUE klass){
  *
  * The possible options are:
  *
- * * name        - the name of the policy (mandatory) 
+ * * name        - the name of the policy (mandatory)
  * * min_life    - minimum lifetime of a password
  * * max_life    - maximum lifetime of a password
  * * min_length  - minimum length of a password
@@ -45,19 +55,19 @@ static VALUE rkadm5_policy_init(VALUE self, VALUE v_options){
   VALUE v_name, v_minlife, v_maxlife, v_minlength;
   VALUE v_minclasses, v_historynum;
 
-  Data_Get_Struct(self, RUBY_KADM5_POLICY, ptr);
+  TypedData_Get_Struct(self, RUBY_KADM5_POLICY, &rkadm5_policy_data_type, ptr);
 
   Check_Type(v_options, T_HASH);
 
   if(RTEST(rb_funcall(v_options, rb_intern("empty?"), 0, 0)))
     rb_raise(rb_eArgError, "no policy options provided");
 
-  v_name       = rb_hash_aref2(v_options, "name");
-  v_minlife    = rb_hash_aref2(v_options, "min_life");
-  v_maxlife    = rb_hash_aref2(v_options, "max_life");
-  v_minlength  = rb_hash_aref2(v_options, "min_length");
-  v_minclasses = rb_hash_aref2(v_options, "min_classes");
-  v_historynum = rb_hash_aref2(v_options, "history_num");
+  v_name       = rb_hash_aref2(v_options, rb_str_new_cstr("name"));
+  v_minlife    = rb_hash_aref2(v_options, rb_str_new_cstr("min_life"));
+  v_maxlife    = rb_hash_aref2(v_options, rb_str_new_cstr("max_life"));
+  v_minlength  = rb_hash_aref2(v_options, rb_str_new_cstr("min_length"));
+  v_minclasses = rb_hash_aref2(v_options, rb_str_new_cstr("min_classes"));
+  v_historynum = rb_hash_aref2(v_options, rb_str_new_cstr("history_num"));
 
   if(NIL_P(v_name)){
     rb_raise(rb_eArgError, "name policy option is mandatory");
@@ -82,7 +92,7 @@ static VALUE rkadm5_policy_init(VALUE self, VALUE v_options){
   else{
     rb_iv_set(self, "@max_life", Qnil);
   }
-  
+
   if(!NIL_P(v_minlength)){
     ptr->policy.pw_min_length = NUM2LONG(v_minlength);
     rb_iv_set(self, "@min_length", v_minlength);
@@ -147,11 +157,11 @@ static VALUE rkadm5_policy_inspect(VALUE self){
   rb_str_buf_append(v_str, rb_inspect(rb_iv_get(self, "@history_num")));
 
   rb_str_buf_cat2(v_str, ">");
-  
+
   return v_str;
 }
 
-void Init_policy(){
+void Init_policy(void){
   /* The Kerberos::Kadm5::Policy class encapsulates a Kerberos policy. */
   cKadm5Policy = rb_define_class_under(cKadm5, "Policy", rb_cObject);
 
@@ -191,3 +201,4 @@ void Init_policy(){
 
   rb_define_alias(cKadm5Policy, "name", "policy");
 }
+#endif

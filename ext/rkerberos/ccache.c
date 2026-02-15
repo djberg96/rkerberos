@@ -2,28 +2,35 @@
 
 VALUE cKrb5CCache;
 
-// Free function for the Kerberos::Krb5::CCache class.
-static void rkrb5_ccache_free(RUBY_KRB5_CCACHE* ptr){
-  if(!ptr)
-    return;
 
-  if(ptr->ccache)
-    krb5_cc_close(ptr->ctx, ptr->ccache);
-
-  if(ptr->principal)
-    krb5_free_principal(ptr->ctx, ptr->principal);
-
-  if(ptr->ctx)
-    krb5_free_context(ptr->ctx);
-
-  free(ptr);
+// TypedData functions for RUBY_KRB5_CCACHE
+static void rkrb5_ccache_typed_free(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5_CCACHE *c = (RUBY_KRB5_CCACHE *)ptr;
+  if (c->ccache)
+    krb5_cc_close(c->ctx, c->ccache);
+  if (c->principal)
+    krb5_free_principal(c->ctx, c->principal);
+  if (c->ctx)
+    krb5_free_context(c->ctx);
+  free(c);
 }
+
+static size_t rkrb5_ccache_typed_size(const void *ptr) {
+  return sizeof(RUBY_KRB5_CCACHE);
+}
+
+const rb_data_type_t rkrb5_ccache_data_type = {
+  "RUBY_KRB5_CCACHE",
+  {NULL, rkrb5_ccache_typed_free, rkrb5_ccache_typed_size,},
+  NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 // Allocation function for the Kerberos::Krb5::CCache class.
 static VALUE rkrb5_ccache_allocate(VALUE klass){
-  RUBY_KRB5_CCACHE* ptr = malloc(sizeof(RUBY_KRB5_CCACHE));
+  RUBY_KRB5_CCACHE* ptr = ALLOC(RUBY_KRB5_CCACHE);
   memset(ptr, 0, sizeof(RUBY_KRB5_CCACHE));
-  return Data_Wrap_Struct(klass, 0, rkrb5_ccache_free, ptr);
+  return TypedData_Wrap_Struct(klass, &rkrb5_ccache_data_type, ptr);
 }
 
 /*
@@ -46,7 +53,7 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
   krb5_error_code kerror;
   VALUE v_principal, v_name;
 
-  Data_Get_Struct(self, RUBY_KRB5_CCACHE, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
 
   rb_scan_args(argc, argv, "02", &v_principal, &v_name);
 
@@ -92,14 +99,14 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
     if(kerror)
       rb_raise(cKrb5Exception, "krb5_cc_initialize: %s", error_message(kerror));
   }
-  
+
   return self;
 }
 
 /*
  * call-seq:
  *   ccache.close
- *   
+ *
  * Closes the ccache object. Once the ccache object is closed no more
  * methods may be called on it, or an exception will be raised.
  *
@@ -108,7 +115,7 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
 static VALUE rkrb5_ccache_close(VALUE self){
   RUBY_KRB5_CCACHE* ptr;
 
-  Data_Get_Struct(self, RUBY_KRB5_CCACHE, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
 
   if(!ptr->ctx)
     return self;
@@ -141,7 +148,7 @@ static VALUE rkrb5_ccache_close(VALUE self){
 static VALUE rkrb5_ccache_default_name(VALUE self){
   RUBY_KRB5_CCACHE* ptr;
 
-  Data_Get_Struct(self, RUBY_KRB5_CCACHE, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
@@ -160,7 +167,7 @@ static VALUE rkrb5_ccache_primary_principal(VALUE self){
   krb5_error_code kerror;
   char* name;
 
-  Data_Get_Struct(self, RUBY_KRB5_CCACHE, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
@@ -193,7 +200,7 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
   krb5_error_code kerror;
   VALUE v_bool = Qtrue;
 
-  Data_Get_Struct(self, RUBY_KRB5_CCACHE, ptr);
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
@@ -229,7 +236,7 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
   return v_bool;
 }
 
-void Init_ccache(){
+void Init_ccache(void){
   /* The Kerberos::Krb5::CredentialsCache class encapsulates a Kerberos credentials cache. */
   cKrb5CCache = rb_define_class_under(cKrb5, "CredentialsCache", rb_cObject);
 
