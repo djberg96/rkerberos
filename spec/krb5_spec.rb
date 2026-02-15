@@ -44,4 +44,20 @@ RSpec.describe Kerberos::Krb5 do
       expect(krb5.method(:default_realm)).to eq(krb5.method(:get_default_realm))
     end
   end
+
+  describe '#verify_init_creds' do
+    it 'responds to verify_init_creds' do
+      expect(krb5).to respond_to(:verify_init_creds)
+    end
+
+    it 'raises when no credentials have been acquired' do
+      expect { krb5.verify_init_creds }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'validates argument types' do
+      expect { krb5.verify_init_creds(true) }.to raise_error(TypeError)
+      expect { krb5.verify_init_creds(nil, true) }.to raise_error(TypeError)
+      expect { krb5.verify_init_creds(nil, nil, true) }.to raise_error(TypeError)
+    end
+  end
 end
