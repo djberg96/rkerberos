@@ -59,5 +59,29 @@ RSpec.describe Kerberos::Krb5 do
       expect { krb5.verify_init_creds(nil, true) }.to raise_error(TypeError)
       expect { krb5.verify_init_creds(nil, nil, true) }.to raise_error(TypeError)
     end
+
+    it 'verifies credentials obtained via password' do
+      krb5.get_init_creds_password(user, 'changeme')
+      expect(krb5.verify_init_creds).to be true
+    end
+
+    it 'accepts a server principal string' do
+      krb5.get_init_creds_password(user, 'changeme')
+      expect(krb5.verify_init_creds("kadmin/admin@#{@realm}")).to be true
+    end
+
+    it 'accepts a Keytab object' do
+      krb5.get_init_creds_password(user, 'changeme')
+      kt = Kerberos::Krb5::Keytab.new
+      expect(krb5.verify_init_creds(nil, kt)).to be true
+    end
+
+    it 'stores additional credentials in provided CredentialsCache' do
+      ccache = Kerberos::Krb5::CredentialsCache.new
+      krb5.get_init_creds_password(user, 'changeme')
+      expect(krb5.verify_init_creds(nil, nil, ccache)).to be true
+      expect(ccache.primary_principal).to be_a(String)
+      expect(ccache.primary_principal).to include('@')
+    end
   end
 end

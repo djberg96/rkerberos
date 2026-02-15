@@ -7,13 +7,14 @@ if [ ! -f /etc/krb5kdc/.k5.EXAMPLE.COM ]; then
   kadmin.local -q "addprinc -pw adminpassword admin/admin"
 fi
 
-# Create standard test principals for keytab/credential cache tests
-kadmin.local -q "addprinc -pw changeme testuser1@EXAMPLE.COM"
-kadmin.local -q "addprinc -pw changeme zztop@EXAMPLE.COM"
-kadmin.local -q "addprinc -pw changeme martymcfly@EXAMPLE.COM"
-kadmin.local -q "ktadd -k /etc/krb5.keytab testuser1@EXAMPLE.COM"
-kadmin.local -q "ktadd -k /etc/krb5.keytab zztop@EXAMPLE.COM"
-kadmin.local -q "ktadd -k /etc/krb5.keytab martymcfly@EXAMPLE.COM"
+# Create or update standard test principals for keytab/credential cache tests
+# Use addprinc when principal is missing; otherwise enforce the known password with cpw.
+for p in testuser1 zztop martymcfly; do
+  kadmin.local -q "addprinc -pw changeme ${p}@EXAMPLE.COM" 2>/dev/null || \
+    kadmin.local -q "cpw -pw changeme ${p}@EXAMPLE.COM"
+  # Attempt to add keys to the system keytab; ignore errors caused by volume mounts.
+  kadmin.local -q "ktadd -k /etc/krb5.keytab ${p}@EXAMPLE.COM" 2>/dev/null || true
+done
 
 # Start KDC and admin server
 krb5kdc

@@ -581,6 +581,20 @@ static VALUE rkrb5_verify_init_creds(int argc, VALUE* argv, VALUE self){
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_verify_init_creds: %s", error_message(kerror));
 
+  /* If the caller supplied a CredentialsCache object, store the verified
+     credentials there so Ruby-level callers can inspect the cache. */
+  if(ccache_ptr && *ccache_ptr){
+    krb5_error_code k2;
+
+    k2 = krb5_cc_initialize(ptr->ctx, *ccache_ptr, ptr->creds.client);
+    if(k2)
+      rb_raise(cKrb5Exception, "krb5_cc_initialize: %s", error_message(k2));
+
+    k2 = krb5_cc_store_cred(ptr->ctx, *ccache_ptr, &ptr->creds);
+    if(k2)
+      rb_raise(cKrb5Exception, "krb5_cc_store_cred: %s", error_message(k2));
+  }
+
   return Qtrue;
 }
 
