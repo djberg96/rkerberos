@@ -9,7 +9,10 @@
 // Make the context data type visible to other C files
 extern const rb_data_type_t rkrb5_context_data_type;
 // Make the config data type visible to other C files
+
+#ifdef HAVE_KADM5_ADMIN_H
 extern const rb_data_type_t rkadm5_config_data_type;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,6 +34,7 @@ extern const rb_data_type_t rkadm5_policy_data_type;
 #endif
 
 // Function Prototypes
+
 void Init_context();
 #ifdef HAVE_KADM5_ADMIN_H
 void Init_kadm5();
@@ -54,10 +58,12 @@ extern VALUE cKrb5Keytab;
 extern VALUE cKrb5KtEntry;
 extern VALUE cKrb5Exception;
 extern VALUE cKrb5Principal;
+#ifdef HAVE_KADM5_ADMIN_H
 extern VALUE cKadm5;
 extern VALUE cKadm5Config;
 extern VALUE cKadm5Exception;
 extern VALUE cKadm5Policy;
+#endif
 
 // Kerberos::Krb5
 typedef struct {
@@ -73,6 +79,7 @@ typedef struct {
   krb5_enctype etypes;
 } RUBY_KRB5_CONTEXT;
 
+#ifdef HAVE_KADM5_ADMIN_H
 // Kerberos::Kadm5
 typedef struct {
   krb5_context ctx;
@@ -80,6 +87,7 @@ typedef struct {
   void* handle;
   char** db_args;
 } RUBY_KADM5;
+#endif
 
 // Kerberos::Krb5::Keytab::Entry
 typedef struct {
