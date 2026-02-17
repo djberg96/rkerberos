@@ -4,7 +4,7 @@
 require 'rkerberos'
 require 'socket'
 
-RSpec.describe Kerberos::Kadm5 do
+RSpec.describe Kerberos::Kadm5, :kadm5 do
   before(:all) do
     @server = Kerberos::Kadm5::Config.new.admin_server
     @host = Socket.gethostname
