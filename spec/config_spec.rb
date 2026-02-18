@@ -3,8 +3,8 @@
 
 require 'spec_helper'
 
-RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
-  subject(:config) { described_class.new }
+RSpec.describe 'config', :kadm5 do
+  subject(:config) { Kerberos::Kadm5::Config.new }
 
   it 'is frozen' do
     expect(config).to be_frozen
