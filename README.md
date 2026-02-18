@@ -91,6 +91,27 @@ If you make changes to the Ruby code or C extensions:
    podman-compose run --rm rkerberos-test
    ```
 
+Context usage example
+
+You can create a secure or profile-bound Kerberos context from Ruby:
+
+```ruby
+# secure context (ignore environment)
+ctx = Kerberos::Krb5::Context.new(secure: true)
+
+# use a specific krb5.conf profile
+ctx = Kerberos::Krb5::Context.new(profile: '/etc/krb5.conf')
+
+# secure + profile combined
+ctx = Kerberos::Krb5::Context.new(secure: true, profile: '/etc/krb5.conf')
+
+# close when finished
+ctx.close
+```
+
+> Tip: `secure: true` causes the underlying library to ignore KRB5_* environment
+> variables (useful for daemons or security-sensitive code).
+
 The test environment includes:
 - MIT Kerberos KDC (Key Distribution Center)
 - OpenLDAP server for directory services
