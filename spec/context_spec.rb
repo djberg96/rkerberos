@@ -42,6 +42,16 @@ RSpec.describe Kerberos::Krb5::Context do
         ENV['KRB5_CONFIG'] = orig
       end
     end
+
+    it 'accepts secure: true together with profile' do
+      profile_path = ENV['KRB5_CONFIG'] || '/etc/krb5.conf'
+      expect(File).to exist(profile_path)
+
+      ctx = nil
+      expect { ctx = described_class.new(secure: true, profile: profile_path) }.not_to raise_error
+      expect(ctx).to be_a(described_class)
+      expect { ctx.close }.not_to raise_error
+    end
   end
 
   after(:each) do
