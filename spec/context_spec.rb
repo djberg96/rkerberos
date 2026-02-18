@@ -18,6 +18,32 @@ RSpec.describe Kerberos::Krb5::Context do
     end
   end
 
+  describe 'constructor options' do
+    it 'accepts secure: true to use a secure context' do
+      expect { described_class.new(secure: true) }.not_to raise_error
+    end
+
+    it 'accepts a profile path via :profile' do
+      profile_path = ENV['KRB5_CONFIG'] || '/etc/krb5.conf'
+      expect(File).to exist(profile_path)
+      expect { described_class.new(profile: profile_path) }.not_to raise_error
+    end
+
+    it 'validates profile argument type' do
+      expect { described_class.new(profile: 123) }.to raise_error(TypeError)
+    end
+
+    it 'ignores environment when secure: true' do
+      begin
+        orig = ENV['KRB5_CONFIG']
+        ENV['KRB5_CONFIG'] = '/no/such/file'
+        expect { described_class.new(secure: true) }.not_to raise_error
+      ensure
+        ENV['KRB5_CONFIG'] = orig
+      end
+    end
+  end
+
   after(:each) do
     context.close
   end
