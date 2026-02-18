@@ -57,10 +57,20 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
 
   rb_scan_args(argc, argv, "02", &v_principal, &v_name);
 
-  // Convert the principal name to a principal object
-  if(RTEST(v_principal)){
+  if (RTEST(v_principal))
     Check_Type(v_principal, T_STRING);
 
+  if (!NIL_P(v_name))
+    Check_Type(v_name, T_STRING);
+
+  // Initialize the context first (required by krb5 APIs)
+  kerror = krb5_init_context(&ptr->ctx);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+
+  // Convert the principal name to a principal object
+  if(RTEST(v_principal)){
     kerror = krb5_parse_name(
       ptr->ctx,
       StringValueCStr(v_principal),
@@ -71,25 +81,27 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
       rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
   }
 
-  // Initialize the context
-  kerror = krb5_init_context(&ptr->ctx);
+  /* Only open/resolve a credentials cache when the caller explicitly
+     provided a principal or an explicit cache name. Constructing a
+     CredentialsCache with no arguments should be a lightweight operation
+     and must not attempt to open platform-specific cache backends that
+     can crash in some environments. */
+  if (RTEST(v_principal) || !NIL_P(v_name)) {
+    if (NIL_P(v_name)){
+      kerror = krb5_cc_default(ptr->ctx, &ptr->ccache);
 
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+      if(kerror)
+        rb_raise(cKrb5Exception, "krb5_cc_default: %s", error_message(kerror));
+    }
+    else{
+      kerror = krb5_cc_resolve(ptr->ctx, StringValueCStr(v_name), &ptr->ccache);
 
-  // Set the credentials cache using the default cache if no name is provided
-  if(NIL_P(v_name)){
-    kerror = krb5_cc_default(ptr->ctx, &ptr->ccache);
-
-    if(kerror)
-      rb_raise(cKrb5Exception, "krb5_cc_default: %s", error_message(kerror));
+      if(kerror)
+        rb_raise(cKrb5Exception, "krb5_cc_resolve: %s", error_message(kerror));
+    }
   }
-  else{
-    Check_Type(v_name, T_STRING);
-    kerror = krb5_cc_resolve(ptr->ctx, StringValueCStr(v_name), &ptr->ccache);
-
-    if(kerror)
-      rb_raise(cKrb5Exception, "krb5_cc_resolve: %s", error_message(kerror));
+  else {
+    /* No principal and no explicit cache name => do not open a cache */
   }
 
   // Initialize the credentials cache if a principal was provided
@@ -116,6 +128,8 @@ static VALUE rkrb5_ccache_close(VALUE self){
   RUBY_KRB5_CCACHE* ptr;
 
   TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
+
+
 
   if(!ptr->ctx)
     return self;
@@ -172,6 +186,9 @@ static VALUE rkrb5_ccache_primary_principal(VALUE self){
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
 
+  if(!ptr->ccache)
+    rb_raise(cKrb5Exception, "no credentials cache has been opened");
+
   kerror = krb5_cc_get_principal(ptr->ctx, ptr->ccache, &ptr->principal);
 
   if(kerror)
@@ -202,8 +219,15 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
 
   TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
 
+
+
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
+
+  /* If there's no cache opened for this object return false as the
+     caller expects (no-op). This avoids passing NULL into krb5_cc_destroy. */
+  if (!ptr->ccache)
+    return Qfalse;
 
   kerror = krb5_cc_destroy(ptr->ctx, ptr->ccache);
 
