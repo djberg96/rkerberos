@@ -57,10 +57,17 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
 
   rb_scan_args(argc, argv, "02", &v_principal, &v_name);
 
-  // Convert the principal name to a principal object
-  if(RTEST(v_principal)){
+  if(RTEST(v_principal))
     Check_Type(v_principal, T_STRING);
 
+  // Initialize the context
+  kerror = krb5_init_context(&ptr->ctx);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+
+  // Convert the principal name to a principal object
+  if(RTEST(v_principal)){
     kerror = krb5_parse_name(
       ptr->ctx,
       StringValueCStr(v_principal),
@@ -70,12 +77,6 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
     if(kerror)
       rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
   }
-
-  // Initialize the context
-  kerror = krb5_init_context(&ptr->ctx);
-
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
 
   // Set the credentials cache using the default cache if no name is provided
   if(NIL_P(v_name)){
