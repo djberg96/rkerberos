@@ -53,13 +53,12 @@ static VALUE rkrb5_context_close(VALUE self){
  * call-seq:
  *   Kerberos::Context.new(options = {})
  *
- * Creates and returns a new Kerberos::Context object. Options (Hash):
- *   :secure  => true|false   # use krb5_init_secure_context (ignore env)
- *   :profile => '/path/to/krb5.conf' # use the specified profile file
+ * Creates and returns a new Kerberos::Context object.
  *
- * If a `:profile` is supplied it will be loaded via profile_init_path() and
- * passed to krb5_init_context_profile(); otherwise a secure or normal
- * context init is used depending on the `:secure` flag.
+ * The options hash may be one or both of the following keys:
+ *
+ *   :secure  => true|false           # Use config files only, ignore env variables
+ *   :profile => '/path/to/krb5.conf' # Use the specified profile file
  */
 static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
   RUBY_KRB5_CONTEXT* ptr;
@@ -71,7 +70,7 @@ static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
 
   rb_scan_args(argc, argv, "01", &v_opts);
 
-  /* default behaviour: normal context that may respect environment */
+  // Default behavior is a normal context that may respect environment.
   if (NIL_P(v_opts)) {
     kerror = krb5_init_context(&ptr->ctx);
     if(kerror)
@@ -82,18 +81,21 @@ static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
 
   Check_Type(v_opts, T_HASH);
 
-  /* options parsing */
   v_secure = rb_hash_aref2(v_opts, ID2SYM(rb_intern("secure")));
   v_profile = rb_hash_aref2(v_opts, ID2SYM(rb_intern("profile")));
 
-  /* If a profile path is supplied, load it via profile_init_path() and
-     create a context from that profile. The KRB5_INIT_CONTEXT_SECURE flag
-     is used when the :secure option is truthy. */
+  /*
+   * If a profile path is supplied, load it via profile_init_path() and
+   * create a context from that profile. The KRB5_INIT_CONTEXT_SECURE flag
+   * is used when the :secure option is truthy.
+   */
   if (!NIL_P(v_profile)){
     Check_Type(v_profile, T_STRING);
+
     const char *profile_path = StringValueCStr(v_profile);
     profile_t profile = NULL;
     long pres = profile_init_path(profile_path, &profile);
+
     if(pres != 0)
       rb_raise(cKrb5Exception, "profile_init_path: %ld", pres);
 
@@ -108,7 +110,7 @@ static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
     return self;
   }
 
-  /* No profile given — choose secure or normal init */
+  // No profile given, choose secure or normal init.
   if (RTEST(v_secure)){
     kerror = krb5_init_secure_context(&ptr->ctx);
     if(kerror)
