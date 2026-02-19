@@ -142,7 +142,6 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   }
 
   if(RTEST(v_password)){
-#ifdef KADM5_API_VERSION_3
     kerror = kadm5_init_with_password(
       ptr->ctx,
       user,
@@ -154,24 +153,11 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
       ptr->db_args,
       &ptr->handle
     );
-#else
-    kerror = kadm5_init_with_password(
-      user,
-      pass,
-      service,
-      NULL,
-      KADM5_STRUCT_VERSION,
-      KADM5_API_VERSION_2,
-      ptr->db_args,
-      &ptr->handle
-    );
-#endif
 
     if(kerror)
       rb_raise(cKadm5Exception, "kadm5_init_with_password: %s", error_message(kerror));
   }
   else if(RTEST(v_keytab)){
-#ifdef KADM5_API_VERSION_3
     kerror = kadm5_init_with_skey(
       ptr->ctx,
       user,
@@ -183,18 +169,6 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
       ptr->db_args,
       &ptr->handle
     );
-#else
-    kerror = kadm5_init_with_skey(
-      user,
-      keytab,
-      service,
-      NULL,
-      KADM5_STRUCT_VERSION,
-      KADM5_API_VERSION_2,
-      ptr->db_args,
-      &ptr->handle
-    );
-#endif
 
     if(kerror)
       rb_raise(cKadm5Exception, "kadm5_init_with_skey: %s", error_message(kerror));
