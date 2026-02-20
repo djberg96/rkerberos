@@ -396,6 +396,78 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
 
 /*
  * call-seq:
+ *   krb5.verify_init_creds(principal, password, opts = {})
+ *
+ * Obtains initial credentials for +principal+ using +password+ and verifies
+ * them. The +opts+ hash may include:
+ *
+ *   :ap_req_nofail => true|false # default true
+ */
+static VALUE rkrb5_verify_init_creds(int argc, VALUE* argv, VALUE self){
+  RUBY_KRB5* ptr;
+  VALUE v_principal, v_password, v_opts, v_ap_req_nofail;
+  krb5_error_code kerror;
+  krb5_principal principal = NULL;
+  krb5_verify_init_creds_opt vopts;
+  krb5_creds creds;
+  int ap_req_nofail = 0;
+
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  rb_scan_args(argc, argv, "21", &v_principal, &v_password, &v_opts);
+
+  Check_Type(v_principal, T_STRING);
+  Check_Type(v_password, T_STRING);
+
+  if(!NIL_P(v_opts)){
+    Check_Type(v_opts, T_HASH);
+    v_ap_req_nofail = rb_hash_aref2(v_opts, ID2SYM(rb_intern("ap_req_nofail")));
+    if(!NIL_P(v_ap_req_nofail))
+      ap_req_nofail = RTEST(v_ap_req_nofail) ? 1 : 0;
+  }
+
+  kerror = krb5_parse_name(ptr->ctx, StringValueCStr(v_principal), &principal);
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
+
+  memset(&creds, 0, sizeof(creds));
+
+  kerror = krb5_get_init_creds_password(
+    ptr->ctx,
+    &creds,
+    principal,
+    StringValueCStr(v_password),
+    NULL,
+    NULL,
+    0,
+    NULL,
+    NULL
+  );
+
+  if(kerror){
+    krb5_free_principal(ptr->ctx, principal);
+    rb_raise(cKrb5Exception, "krb5_get_init_creds_password: %s", error_message(kerror));
+  }
+
+  krb5_verify_init_creds_opt_init(&vopts);
+  krb5_verify_init_creds_opt_set_ap_req_nofail(&vopts, ap_req_nofail);
+
+  kerror = krb5_verify_init_creds(ptr->ctx, &creds, NULL, NULL, NULL, &vopts);
+
+  krb5_free_cred_contents(ptr->ctx, &creds);
+  krb5_free_principal(ptr->ctx, principal);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_verify_init_creds: %s", error_message(kerror));
+
+  return Qtrue;
+}
+
+/*
+ * call-seq:
  *   krb5.close
  *
  * Handles cleanup of the Krb5 object, freeing any credentials, principal or
@@ -535,6 +607,7 @@ void Init_rkerberos(void){
   rb_define_method(cKrb5, "get_default_realm", rkrb5_get_default_realm, 0);
   rb_define_method(cKrb5, "get_init_creds_password", rkrb5_get_init_creds_passwd, -1);
   rb_define_method(cKrb5, "get_init_creds_keytab", rkrb5_get_init_creds_keytab, -1);
+  rb_define_method(cKrb5, "verify_init_creds", rkrb5_verify_init_creds, -1);
   rb_define_method(cKrb5, "get_default_principal", rkrb5_get_default_principal, 0);
   rb_define_method(cKrb5, "get_permitted_enctypes", rkrb5_get_permitted_enctypes, 0);
   rb_define_method(cKrb5, "set_default_realm", rkrb5_set_default_realm, -1);

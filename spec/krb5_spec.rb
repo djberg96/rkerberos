@@ -26,6 +26,26 @@ RSpec.describe Kerberos::Krb5 do
     described_class.new { |k| expect(k).to be_a(described_class) }
   end
 
+  describe '#verify_init_creds' do
+    let(:principal) { ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM') }
+    let(:password) { ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword') }
+    let(:bad_password) { 'incorrect-password' }
+
+    it 'verifies credentials with correct password' do
+      expect { krb5.verify_init_creds(principal, password) }.not_to raise_error
+    end
+
+    it 'raises an error with an invalid password' do
+      expect { krb5.verify_init_creds(principal, bad_password) }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'respects the ap_req_nofail option' do
+      expect {
+        krb5.verify_init_creds(principal, password, ap_req_nofail: false)
+      }.not_to raise_error
+    end
+  end
+
   describe '#get_default_realm' do
     it 'responds to get_default_realm' do
       expect(krb5).to respond_to(:get_default_realm)
