@@ -10,6 +10,7 @@ RSpec.describe Kerberos::Krb5 do
     Open3.popen3('klist') { |_, _, stderr| @cache_found = false unless stderr.gets.nil? }
     @krb5_conf = ENV['KRB5_CONFIG'] || '/etc/krb5.conf'
     @realm = IO.read(@krb5_conf).split("\n").grep(/default_realm/).first.split('=').last.lstrip.chomp
+
   end
 
   subject(:krb5) { described_class.new }
@@ -46,6 +47,19 @@ RSpec.describe Kerberos::Krb5 do
   end
 
   describe '#verify_init_creds' do
+    # Some KDC setups may not correctly set the initial password during
+    # entrypoint startup; enforce it here via the admin API so the test is
+    # deterministic.
+    before do
+      user = "testuser1@#{@realm}"
+      Kerberos::Kadm5.new(
+        principal: ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM'),
+        password: ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword')
+      ) do |kadmin|
+        kadmin.set_password(user, 'changeme')
+      end
+    end
+
     it 'responds to verify_init_creds' do
       expect(krb5).to respond_to(:verify_init_creds)
     end
@@ -61,21 +75,10 @@ RSpec.describe Kerberos::Krb5 do
     end
 
     it 'verifies credentials obtained via password' do
-      # some KDC setups may not correctly set the initial password during
-      # entrypoint startup; enforce it here via the admin API so the test is
-      # deterministic.
-      Kerberos::Kadm5.new(
-        principal: ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM'),
-        password: ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword')
-      ) do |kadmin|
-        kadmin.set_password(user, 'changeme')
-      end
-
       krb5.get_init_creds_password(user, 'changeme')
       expect(krb5.verify_init_creds).to be true
     end
 
-=begin
     it 'accepts a server principal string' do
       krb5.get_init_creds_password(user, 'changeme')
       expect(krb5.verify_init_creds("kadmin/admin@#{@realm}")).to be true
@@ -94,21 +97,5 @@ RSpec.describe Kerberos::Krb5 do
       expect(ccache.primary_principal).to be_a(String)
       expect(ccache.primary_principal).to include('@')
     end
-
-    it 'provides authenticate! which acquires+verifies (Zanarotti mitigation)' do
-      expect(krb5).to respond_to(:authenticate!)
-      expect(krb5.authenticate!(user, 'changeme')).to be true
-      expect(krb5.verify_init_creds).to be true
-    end
-
-    it 'accepts an optional service argument' do
-      expect { krb5.authenticate!(user, 'changeme', 'kadmin/changepw') }.not_to raise_error
-      expect(krb5.verify_init_creds).to be true
-    end
-
-    it 'validates argument types for authenticate!' do
-      expect { krb5.authenticate!(true, true) }.to raise_error(TypeError)
-    end
-=end
   end
 end
