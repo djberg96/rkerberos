@@ -1,5 +1,7 @@
 #include <rkerberos.h>
 
+#include <profile.h>
+
 VALUE cKrb5Context;
 
 // Free function for the Kerberos::Krb5::Context class.
