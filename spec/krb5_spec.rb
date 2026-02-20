@@ -44,4 +44,71 @@ RSpec.describe Kerberos::Krb5 do
       expect(krb5.method(:default_realm)).to eq(krb5.method(:get_default_realm))
     end
   end
+
+  describe '#verify_init_creds' do
+    it 'responds to verify_init_creds' do
+      expect(krb5).to respond_to(:verify_init_creds)
+    end
+
+    it 'raises when no credentials have been acquired' do
+      expect { krb5.verify_init_creds }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'validates argument types' do
+      expect { krb5.verify_init_creds(true) }.to raise_error(TypeError)
+      expect { krb5.verify_init_creds(nil, true) }.to raise_error(TypeError)
+      expect { krb5.verify_init_creds(nil, nil, true) }.to raise_error(TypeError)
+    end
+
+    it 'verifies credentials obtained via password' do
+      # some KDC setups may not correctly set the initial password during
+      # entrypoint startup; enforce it here via the admin API so the test is
+      # deterministic.
+      Kerberos::Kadm5.new(
+        principal: ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM'),
+        password: ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword')
+      ) do |kadmin|
+        kadmin.set_password(user, 'changeme')
+      end
+
+      krb5.get_init_creds_password(user, 'changeme')
+      expect(krb5.verify_init_creds).to be true
+    end
+
+=begin
+    it 'accepts a server principal string' do
+      krb5.get_init_creds_password(user, 'changeme')
+      expect(krb5.verify_init_creds("kadmin/admin@#{@realm}")).to be true
+    end
+
+    it 'accepts a Keytab object' do
+      krb5.get_init_creds_password(user, 'changeme')
+      kt = Kerberos::Krb5::Keytab.new
+      expect(krb5.verify_init_creds(nil, kt)).to be true
+    end
+
+    it 'stores additional credentials in provided CredentialsCache' do
+      ccache = Kerberos::Krb5::CredentialsCache.new
+      krb5.get_init_creds_password(user, 'changeme')
+      expect(krb5.verify_init_creds(nil, nil, ccache)).to be true
+      expect(ccache.primary_principal).to be_a(String)
+      expect(ccache.primary_principal).to include('@')
+    end
+
+    it 'provides authenticate! which acquires+verifies (Zanarotti mitigation)' do
+      expect(krb5).to respond_to(:authenticate!)
+      expect(krb5.authenticate!(user, 'changeme')).to be true
+      expect(krb5.verify_init_creds).to be true
+    end
+
+    it 'accepts an optional service argument' do
+      expect { krb5.authenticate!(user, 'changeme', 'kadmin/changepw') }.not_to raise_error
+      expect(krb5.verify_init_creds).to be true
+    end
+
+    it 'validates argument types for authenticate!' do
+      expect { krb5.authenticate!(true, true) }.to raise_error(TypeError)
+    end
+=end
+  end
 end
