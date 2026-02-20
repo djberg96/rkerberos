@@ -158,7 +158,6 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
 
   krb5_error_code kerror;
   krb5_get_init_creds_opt* opt;
-  krb5_creds cred;
 
   TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
@@ -247,7 +246,7 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
 
   kerror = krb5_get_init_creds_keytab(
     ptr->ctx,
-    &cred,
+    &ptr->creds,
     ptr->princ,
     ptr->keytab,
     0,
@@ -543,8 +542,8 @@ void Init_rkerberos(void){
   rb_define_alias(cKrb5, "default_realm", "get_default_realm");
   rb_define_alias(cKrb5, "default_principal", "get_default_principal");
 
-  /* 0.2.0: The version of the custom rkerberos library */
-  rb_define_const(cKrb5, "VERSION", rb_str_new2("0.2.0"));
+  /* 0.2.1: The version of the custom rkerberos library */
+  rb_define_const(cKrb5, "VERSION", rb_str_new2("0.2.1"));
 
   // Encoding type constants
 
