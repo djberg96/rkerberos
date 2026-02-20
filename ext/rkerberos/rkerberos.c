@@ -246,7 +246,7 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
 
   kerror = krb5_get_init_creds_keytab(
     ptr->ctx,
-    &ptr->cred,
+    &ptr->creds,
     ptr->princ,
     ptr->keytab,
     0,
