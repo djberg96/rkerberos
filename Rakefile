@@ -77,18 +77,24 @@ RSpec::Core::RakeTask.new(:spec) do |t|
   t.pattern = 'spec/**/*_spec.rb'
 end
 
-# Run specs inside the project container using podman-compose (or docker-compose)
+# Run specs inside the project container using podman-compose (or docker-compose).
 namespace :spec do
   desc 'Build test image and run RSpec inside container (podman-compose or docker-compose)'
-  task :compose do
+  task :compose, [:fast] do |t, args|
+    fast = args[:fast]
+
     compose = `which podman-compose`.strip
     compose = 'docker-compose' if compose.empty?
 
-    puts "Using #{compose} to run containerized specs..."
+    if fast
+      puts "Using #{compose} to run containerized specs (fast)..."
+    else
+      puts "Using #{compose} to run containerized specs..."
+    end
 
     FileUtils.rm_rf('Gemfile.lock')
     begin
-      sh "#{compose} build --no-cache rkerberos-test"
+      sh "#{compose} build --no-cache rkerberos-test" unless fast
       sh "#{compose} run --rm rkerberos-test"
     ensure
       sh "#{compose} down -v"
