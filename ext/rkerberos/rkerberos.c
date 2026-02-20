@@ -158,7 +158,6 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
 
   krb5_error_code kerror;
   krb5_get_init_creds_opt* opt;
-  krb5_creds cred;
 
   TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
@@ -247,7 +246,7 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
 
   kerror = krb5_get_init_creds_keytab(
     ptr->ctx,
-    &cred,
+    &ptr->cred,
     ptr->princ,
     ptr->keytab,
     0,
