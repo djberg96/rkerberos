@@ -77,6 +77,25 @@ RSpec::Core::RakeTask.new(:spec) do |t|
   t.pattern = 'spec/**/*_spec.rb'
 end
 
+# Run specs inside the project container using podman-compose (or docker-compose)
+namespace :spec do
+  desc 'Build test image and run RSpec inside container (podman-compose or docker-compose)'
+  task :compose do
+    compose = `which podman-compose`.strip
+    compose = 'docker-compose' if compose.empty?
+
+    puts "Using #{compose} to run containerized specs..."
+
+    FileUtils.rm_rf('Gemfile.lock')
+    begin
+      sh "#{compose} build --no-cache rkerberos-test"
+      sh "#{compose} run --rm rkerberos-test"
+    ensure
+      sh "#{compose} down -v"
+    end
+  end
+end
+
 # Clean up afterwards
 Rake::Task[:spec].enhance do
   Rake::Task[:clean].invoke
