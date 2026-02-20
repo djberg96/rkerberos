@@ -1,9 +1,6 @@
 require 'rake'
-begin
-  require 'rspec/core/rake_task'
-rescue LoadError
-  # RSpec not available
-end
+require 'fileutils'
+require 'rspec/core/rake_task'
 require 'rake/extensiontask'
 require 'rake/clean'
 require 'rbconfig'
@@ -75,6 +72,21 @@ end
 desc 'Run all specs'
 RSpec::Core::RakeTask.new(:spec) do |t|
   t.pattern = 'spec/**/*_spec.rb'
+end
+
+# Run specs inside the project container using podman-compose (fallbacks to docker-compose)
+namespace :spec do
+  desc 'Build test image and run RSpec inside container (podman-compose or docker-compose)'
+  task :compose do
+    compose = `which podman-compose`.strip
+    compose = 'docker-compose' if compose.empty?
+
+    puts "Using #{compose} to run containerized specs..."
+
+    FileUtils.rm_rf('Gemfile.lock')
+    sh "#{compose} build --no-cache rkerberos-test"
+    sh "#{compose} run --rm rkerberos-test"
+  end
 end
 
 # Clean up afterwards
