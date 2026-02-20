@@ -3,6 +3,7 @@
 
 require 'rkerberos'
 require 'open3'
+require 'securerandom'
 
 RSpec.describe Kerberos::Krb5 do
   before(:all) do
@@ -30,6 +31,7 @@ RSpec.describe Kerberos::Krb5 do
     let(:principal) { ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM') }
     let(:password) { ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword') }
     let(:bad_password) { 'incorrect-password' }
+    let(:original_keytab_env) { ENV['KRB5_KTNAME'] }
 
     it 'verifies credentials with correct password' do
       expect { krb5.verify_init_creds(principal, password) }.not_to raise_error
@@ -43,6 +45,19 @@ RSpec.describe Kerberos::Krb5 do
       expect {
         krb5.verify_init_creds(principal, password, ap_req_nofail: false)
       }.not_to raise_error
+    end
+
+    context 'when ap_req_nofail is true and no keytab is available' do
+      let(:missing_keytab) { "FILE:/tmp/#{SecureRandom.hex}.keytab" }
+
+      it 'raises an error because the verifier cannot find a keytab' do
+        ENV['KRB5_KTNAME'] = missing_keytab
+        expect {
+          krb5.verify_init_creds(principal, password, ap_req_nofail: true)
+        }.to raise_error(Kerberos::Krb5::Exception, /krb5_verify_init_creds/)
+      ensure
+        ENV['KRB5_KTNAME'] = original_keytab_env
+      end
     end
   end
 
