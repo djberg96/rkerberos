@@ -81,7 +81,13 @@ end
 namespace :spec do
   desc 'Build test image and run RSpec inside container (podman-compose or docker-compose)'
   task :compose, [:fast] do |t, args|
+    # allow either positional or named argument (e.g. "fast=true")
     fast = args[:fast]
+    if fast && fast.include?("=")
+      k,v = fast.split("=",2)
+      fast = v if k == 'fast'
+    end
+    fast = true if fast == 'true'
 
     compose = `which podman-compose`.strip
     compose = 'docker-compose' if compose.empty?
