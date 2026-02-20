@@ -1,3 +1,5 @@
+[![Ruby](https://github.com/rkerberos/rkerberos/actions/workflows/ci.yml/badge.svg)](https://github.com/rkerberos/rkerberos/actions/workflows/ci.yml)
+
 # Description
 The rkerberos library provides a Ruby interface for Kerberos.
 
