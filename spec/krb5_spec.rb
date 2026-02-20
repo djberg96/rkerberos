@@ -58,6 +58,15 @@ RSpec.describe Kerberos::Krb5 do
       ensure
         ENV['KRB5_KTNAME'] = original_keytab_env
       end
+
+      it 'does not raise when ap_req_nofail is false' do
+        ENV['KRB5_KTNAME'] = missing_keytab
+        expect {
+          krb5.verify_init_creds(principal, password, ap_req_nofail: false)
+        }.not_to raise_error
+      ensure
+        ENV['KRB5_KTNAME'] = original_keytab_env
+      end
     end
   end
 
