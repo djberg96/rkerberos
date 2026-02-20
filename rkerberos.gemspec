@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.authors    = ['Daniel Berger', 'Dominic Cleal', 'Simon Levermann']
   spec.license    = 'Artistic-2.0'
   spec.email      = ['djberg96@gmail.com', 'dominic@cleal.org', 'simon-rubygems@slevermann.de']
-  spec.homepage   = 'http://github.com/domcleal/rkerberos'
+  spec.homepage   = 'http://github.com/rkerberos/rkerberos'
   spec.summary    = 'A Ruby interface for the the Kerberos library'
   spec.test_files = Dir['spec/**/*_spec.rb']
   spec.extensions = ['ext/rkerberos/extconf.rb']

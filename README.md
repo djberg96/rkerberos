@@ -1,5 +1,42 @@
 # Description
-  The rkerberos library provides a Ruby interface for Kerberos.
+The rkerberos library provides a Ruby interface for Kerberos.
+
+## Code synopsis
+
+Some basic usage:
+
+```ruby
+require 'rkerberos'
+
+# Client
+krb = Kerberos::Krb5.new
+puts krb.default_realm
+puts krb.default_principal
+puts krb.get_permitted_enctypes.keys.join(',')
+
+# Credentials cache
+cc = Kerberos::Krb5::CredentialsCache.new
+krb.verify_init_creds(nil, nil, cc)
+puts cc.primary_principal
+
+# Keytab
+kt_name = Kerberos::Krb5::Keytab.new.default_name # e.g. "FILE:/etc/krb5.keytab"
+krb.get_init_creds_keytab('host/server.example.com', kt_name)
+krb.get_init_creds_keytab('host/server.example.com', kt_name, nil, cc) # or write to cache
+
+# Admin
+Kerberos::Kadm5.new(principal: ENV['KRB5_ADMIN_PRINCIPAL'], password: ENV['KRB5_ADMIN_PASSWORD']) do |kadmin|
+  kadmin.create_principal('newuser@EXAMPLE.COM', 'initialpass')
+  kadmin.set_password('newuser@EXAMPLE.COM', 'betterpass')
+  kadmin.delete_principal('newuser@EXAMPLE.COM')
+end
+
+# Contexts
+ctx = Kerberos::Krb5::Context.new # standard context
+ctx = Kerberos::Krb5::Context.new(profile: '/etc/krb5.conf') # or use a profile
+ctx = Kerberos::Krb5::Context.new(secure: true) # or use a secure context
+ctx.close
+```
 
 # Requirements
 
@@ -112,8 +149,8 @@ The test environment includes:
 
 # Authors
 * Daniel Berger
-* Dominic Cleal (maintainer)
-* Simon Levermann (maintainer)
+* Dominic Cleal
+* Simon Levermann
 
 # License
   rkerberos is distributed under the Artistic-2.0 license.
