@@ -18,7 +18,7 @@ RSpec.describe Kerberos::Krb5 do
   let(:service) { 'kadmin/admin' }
 
   it 'has the correct version constant' do
-    expect(Kerberos::Krb5::VERSION).to eq('0.2.0')
+    expect(Kerberos::Krb5::VERSION).to eq('0.2.1')
   end
 
   it 'accepts a block and yields itself' do
