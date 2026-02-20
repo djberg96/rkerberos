@@ -517,6 +517,88 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
   return v_enctypes;
 }
 
+/*
+ * call-seq:
+ *   krb5.verify_init_creds(server = nil, keytab = nil, ccache = nil)
+ *
+ * Verifies the initial credentials currently stored in the internal
+ * credentials structure. Optionally a server principal string, a
+ * `Kerberos::Krb5::Keytab` and/or a `Kerberos::Krb5::CredentialsCache` may
+ * be supplied to influence verification. Returns true on success and raises
+ * `Kerberos::Krb5::Exception` on error.
+ */
+static VALUE rkrb5_verify_init_creds(int argc, VALUE* argv, VALUE self){
+  RUBY_KRB5* ptr;
+  VALUE v_server, v_keytab, v_ccache;
+  krb5_error_code kerror;
+  krb5_principal server_princ = NULL;
+  RUBY_KRB5_KEYTAB* ktptr = NULL;
+  RUBY_KRB5_CCACHE* ccptr = NULL;
+  krb5_keytab keytab = NULL;
+  krb5_ccache *ccache_ptr = NULL;
+
+  rb_scan_args(argc, argv, "03", &v_server, &v_keytab, &v_ccache);
+
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  // Validate argument types first so callers get TypeError before other errors
+  if(!NIL_P(v_server))
+    Check_Type(v_server, T_STRING);
+
+  if(!NIL_P(v_keytab)){
+    // Will raise TypeError if object isn't the expected Keytab typed data
+    TypedData_Get_Struct(v_keytab, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ktptr);
+    keytab = ktptr->keytab;
+  }
+
+  if(!NIL_P(v_ccache)){
+    // will raise TypeError if object isn't the expected CCache typed data
+    TypedData_Get_Struct(v_ccache, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ccptr);
+    ccache_ptr = &ccptr->ccache;
+  }
+
+  // Ensure we have credentials to verify (check after validating args)
+  if(ptr->creds.client == NULL)
+    rb_raise(cKrb5Exception, "no credentials have been acquired");
+
+  // Optional server principal (parse after context & arg validation)
+  if(!NIL_P(v_server)){
+    kerror = krb5_parse_name(ptr->ctx, StringValueCStr(v_server), &server_princ);
+
+    if(kerror)
+      rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
+  }
+
+  kerror = krb5_verify_init_creds(ptr->ctx, &ptr->creds, server_princ, keytab, ccache_ptr, NULL);
+
+  if(server_princ)
+    krb5_free_principal(ptr->ctx, server_princ);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_verify_init_creds: %s", error_message(kerror));
+
+  /* If the caller supplied a CredentialsCache object, store the verified
+     credentials there so Ruby-level callers can inspect the cache. */
+  if(ccache_ptr && *ccache_ptr){
+    krb5_error_code k2;
+
+    k2 = krb5_cc_initialize(ptr->ctx, *ccache_ptr, ptr->creds.client);
+
+    if(k2)
+      rb_raise(cKrb5Exception, "krb5_cc_initialize: %s", error_message(k2));
+
+    k2 = krb5_cc_store_cred(ptr->ctx, *ccache_ptr, &ptr->creds);
+
+    if(k2)
+      rb_raise(cKrb5Exception, "krb5_cc_store_cred: %s", error_message(k2));
+  }
+
+  return Qtrue;
+}
+
 void Init_rkerberos(void){
   mKerberos      = rb_define_module("Kerberos");
   cKrb5          = rb_define_class_under(mKerberos, "Krb5", rb_cObject);
@@ -534,6 +616,7 @@ void Init_rkerberos(void){
   rb_define_method(cKrb5, "get_default_realm", rkrb5_get_default_realm, 0);
   rb_define_method(cKrb5, "get_init_creds_password", rkrb5_get_init_creds_passwd, -1);
   rb_define_method(cKrb5, "get_init_creds_keytab", rkrb5_get_init_creds_keytab, -1);
+  rb_define_method(cKrb5, "verify_init_creds", rkrb5_verify_init_creds, -1);
   rb_define_method(cKrb5, "get_default_principal", rkrb5_get_default_principal, 0);
   rb_define_method(cKrb5, "get_permitted_enctypes", rkrb5_get_permitted_enctypes, 0);
   rb_define_method(cKrb5, "set_default_realm", rkrb5_set_default_realm, -1);
