@@ -103,7 +103,7 @@ namespace :spec do
       sh "#{compose} build --no-cache rkerberos-test" unless fast
       sh "#{compose} run --rm rkerberos-test"
     ensure
-      sh "#{compose} down -v"
+      sh "#{compose} down -v" rescue nil
     end
   end
 end
