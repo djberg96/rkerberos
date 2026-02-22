@@ -80,10 +80,25 @@ ctx.close
 
 ## Prerequisites
 - Ruby 3.4 or later
-- Docker or Podman
+- Docker or Podman (daemon must be running; the `spec:compose` task will
+  attempt to start `docker` via systemctl on systemd hosts)
 - docker-compose or podman-compose
 
 ## Running Tests with Docker
+> **Ubuntu/Linux users:** the `docker-compose` script is a Python package; the
+> project’s `spec:compose` rake task will automatically create a
+> `.venv` virtual environment and install it when needed. You can also
+> bootstrap one yourself with:
+>
+> ```bash
+> python3 -m venv .venv
+> source .venv/bin/activate
+> pip install --upgrade pip docker-compose
+> ```
+>
+> (skip if you’re using Docker’s built‑in `docker compose` subcommand or
+> `podman-compose`, which aren’t Python‑based.)
+
 1. Start the Kerberos and LDAP services:
    ```bash
    docker-compose up -d
