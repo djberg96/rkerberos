@@ -102,6 +102,13 @@ ctx.close
    Add the `--remove-orphans` switch if it's being a pain.
 
 ## Running Tests with Podman
+> **Tip:** Podman (and podman-compose) won’t happily resolve short image names
+> unless you’ve configured `unqualified-search` registries.  The project’s
+> compose files now use fully qualified names (`docker.io/...` and
+> `localhost/...`) so things work out of the box, but if you customize the
+> YAML make sure to prefix images accordingly or update
+> `~/.config/containers/registries.conf`.
+
 1. Start the Kerberos and LDAP services:
    ```bash
    podman-compose up -d

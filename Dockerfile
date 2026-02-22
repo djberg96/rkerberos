@@ -1,5 +1,5 @@
 # Dockerfile for rkerberos Ruby gem testing
-FROM ruby:3.4
+FROM docker.io/ruby:3.4
 
 # Install MIT Kerberos, KDC, admin server, and build tools
 RUN apt-get update && \
