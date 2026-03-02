@@ -12,8 +12,6 @@ Gem::Specification.new do |spec|
   spec.extensions = ['ext/rkerberos/extconf.rb']
   spec.files      = Dir['**/*'].grep_v(%r{\A(?:\.git|docker|Dockerfile)})
 
-  spec.extra_rdoc_files = ['README.md', 'CHANGES.md', 'MANIFEST.md', 'LICENSE'] + Dir['ext/rkerberos/*.c']
-
   spec.add_development_dependency('rake-compiler')
   spec.add_development_dependency('rspec', '>= 3.0')
   spec.add_development_dependency('net-ldap')
