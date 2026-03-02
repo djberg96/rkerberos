@@ -1,6 +1,6 @@
-CHANGES
+CHANGES.md
 rkerberos.gemspec
-MANIFEST
+MANIFEST.md
 Rakefile
 README
 ext/ccache.c
