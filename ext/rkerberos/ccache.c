@@ -157,6 +157,40 @@ static VALUE rkrb5_ccache_default_name(VALUE self){
   return rb_str_new2(krb5_cc_default_name(ptr->ctx));
 }
 
+// Wrapper for krb5_cc_get_name; returns the actual ccache name.
+static VALUE rkrb5_ccache_get_name(VALUE self){
+  RUBY_KRB5_CCACHE* ptr;
+  const char *name;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  name = krb5_cc_get_name(ptr->ctx, ptr->ccache);
+  if(!name)
+    rb_raise(cKrb5Exception, "krb5_cc_get_name returned NULL");
+
+  return rb_str_new2(name);
+}
+
+// Wrapper for krb5_cc_get_type; returns the cache type string.
+static VALUE rkrb5_ccache_get_type(VALUE self){
+  RUBY_KRB5_CCACHE* ptr;
+  const char *type;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  type = krb5_cc_get_type(ptr->ctx, ptr->ccache);
+  if(!type)
+    rb_raise(cKrb5Exception, "krb5_cc_get_type returned NULL");
+
+  return rb_str_new2(type);
+}
+
 /*
  * call-seq:
  *   ccache.primary_principal
@@ -184,6 +218,11 @@ static VALUE rkrb5_ccache_primary_principal(VALUE self){
     rb_raise(cKrb5Exception, "krb5_unparse_name: %s", error_message(kerror));
 
   return rb_str_new2(name);
+}
+
+// Simple wrapper around krb5_cc_get_principal returning a principal name string.
+static VALUE rkrb5_ccache_principal(VALUE self){
+  return rkrb5_ccache_primary_principal(self);
 }
 
 /*
@@ -291,8 +330,11 @@ void Init_ccache(void){
   // Instance Methods
   rb_define_method(cKrb5CCache, "close", rkrb5_ccache_close, 0);
   rb_define_method(cKrb5CCache, "default_name", rkrb5_ccache_default_name, 0);
+  rb_define_method(cKrb5CCache, "cache_name", rkrb5_ccache_get_name, 0);
+  rb_define_method(cKrb5CCache, "cache_type", rkrb5_ccache_get_type, 0);
   rb_define_method(cKrb5CCache, "destroy", rkrb5_ccache_destroy, 0);
   rb_define_method(cKrb5CCache, "primary_principal", rkrb5_ccache_primary_principal, 0);
+  rb_define_method(cKrb5CCache, "principal", rkrb5_ccache_principal, 0);
   rb_define_method(cKrb5CCache, "dup", rkrb5_ccache_dup, 0);
   rb_define_alias(cKrb5CCache, "clone", "dup");
 

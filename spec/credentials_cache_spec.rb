@@ -83,6 +83,28 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
     end
   end
 
+  describe '#cache_name and #cache_type' do
+    it 'returns the ccache name and type' do
+      c = described_class.new(princ)
+      expect(c).to respond_to(:cache_name)
+      expect(c).to respond_to(:cache_type)
+
+      expect(c.cache_name).to be_a(String)
+      expect(c.cache_type).to be_a(String)
+
+      # cache_name should match whatever default_name reports for a newly-created cache
+      expect(c.cache_name).to eq(c.default_name)
+    end
+  end
+
+  describe '#principal' do
+    it 'is an alias for primary_principal' do
+      c = described_class.new(princ)
+      expect(c).to respond_to(:principal)
+      expect(c.principal).to eq(c.primary_principal)
+    end
+  end
+
   describe '#primary_principal' do
     it 'responds to primary_principal' do
       c = described_class.new(princ)
