@@ -126,4 +126,34 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
       expect { c.destroy(true) }.to raise_error(ArgumentError)
     end
   end
+
+  describe '#dup' do
+    it 'returns a new cache object with the same properties' do
+      c = described_class.new(princ)
+      c2 = c.dup
+      expect(c2).to be_a(described_class)
+      expect(c2.default_name).to eq(c.default_name)
+      expect(c2.primary_principal).to eq(c.primary_principal)
+    end
+
+    it 'closing original does not affect duplicate' do
+      c = described_class.new(princ)
+      c2 = c.dup
+      c.close
+      expect { c2.default_name }.not_to raise_error
+    end
+
+    it 'closing duplicate does not affect original' do
+      c = described_class.new(princ)
+      c2 = c.dup
+      c2.close
+      expect { c.default_name }.not_to raise_error
+    end
+
+    it 'raises when duping closed cache' do
+      c = described_class.new(princ)
+      c.close
+      expect { c.dup }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
 end
