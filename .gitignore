@@ -19,6 +19,7 @@ Gemfile.lock
 .rvmrc*
 .ruby_version
 *.gem
+mkmf.log
 
 tmp/
 lib/
