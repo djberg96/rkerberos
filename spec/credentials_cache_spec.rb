@@ -92,8 +92,9 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
       expect(c.cache_name).to be_a(String)
       expect(c.cache_type).to be_a(String)
 
-      # cache_name should match whatever default_name reports for a newly-created cache
-      expect(c.cache_name).to eq(c.default_name)
+      # cache_name returns the residual portion of the cache name; default_name
+      # may include the type prefix (e.g. "FILE:"). ensure the suffix matches.
+      expect(c.cache_name).to eq(c.default_name.split(':').last)
     end
   end
 
