@@ -237,6 +237,47 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
   return v_bool;
 }
 
+// Duplicate the credentials cache object.
+// call-seq:
+//   ccache.dup -> new_ccache
+//
+// Returns a new Kerberos::Krb5::CredentialsCache that references the
+// same underlying cache data. The new object has its own krb5 context so
+// that closing one cache does not affect the other.
+static VALUE rkrb5_ccache_dup(VALUE self){
+  RUBY_KRB5_CCACHE *ptr, *newptr;
+  krb5_error_code kerror;
+  VALUE newobj;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  // allocate new ruby object and struct
+  newobj = rkrb5_ccache_allocate(CLASS_OF(self));
+  TypedData_Get_Struct(newobj, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, newptr);
+
+  // initialize a fresh context for the duplicate
+  kerror = krb5_init_context(&newptr->ctx);
+  if(kerror){
+    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+  }
+
+  // perform ccache duplication using the new context
+  kerror = krb5_cc_dup(newptr->ctx, ptr->ccache, &newptr->ccache);
+  if(kerror){
+    if(newptr->ctx)
+      krb5_free_context(newptr->ctx);
+    rb_raise(cKrb5Exception, "krb5_cc_dup: %s", error_message(kerror));
+  }
+
+  // principal is not copied; let callers query primary_principal on each
+  newptr->principal = NULL;
+
+  return newobj;
+}
+
 void Init_ccache(void){
   /* The Kerberos::Krb5::CredentialsCache class encapsulates a Kerberos credentials cache. */
   cKrb5CCache = rb_define_class_under(cKrb5, "CredentialsCache", rb_cObject);
@@ -252,6 +293,8 @@ void Init_ccache(void){
   rb_define_method(cKrb5CCache, "default_name", rkrb5_ccache_default_name, 0);
   rb_define_method(cKrb5CCache, "destroy", rkrb5_ccache_destroy, 0);
   rb_define_method(cKrb5CCache, "primary_principal", rkrb5_ccache_primary_principal, 0);
+  rb_define_method(cKrb5CCache, "dup", rkrb5_ccache_dup, 0);
+  rb_define_alias(cKrb5CCache, "clone", "dup");
 
   // Aliases
   rb_define_alias(cKrb5CCache, "delete", "destroy");
