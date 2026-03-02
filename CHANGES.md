@@ -1,3 +1,15 @@
+ = 0.2.1 - 1-Mar-2026
+* Added the verify_init_creds and an authenticate! methods.
+* The Context constructor now accepts optional :secure and/or :profile arguments
+  for different types of contexts.
+* Minor fix for the CredentialsCache constructor.
+* Minor fix for the get_init_creds_keytab method.
+* Fixed a mistake in an rb_funcall in the Policy class (thanks Ondřej Gajdušek).
+* Update gemspec so that releases don't include Docker related files (thanks Ondřej Gajdušek).
+* Add a spec:compose task for convenience.
+* The rake-compiler gem is now a development dependency, not a runtime
+  dependency (thanks Ondřej Gajdušek).
+
  = 0.2.0 - 14-Feb-2026
 * Added Docker and Podman support for running tests in isolated environments with Kerberos and OpenLDAP services.
 * Updated documentation with modern testing and development workflows, including container-based instructions.
