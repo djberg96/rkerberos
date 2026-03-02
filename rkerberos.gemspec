@@ -2,7 +2,7 @@ require 'rubygems'
 
 Gem::Specification.new do |spec|
   spec.name       = 'rkerberos'
-  spec.version    = '0.2.0'
+  spec.version    = '0.2.1'
   spec.authors    = ['Daniel Berger', 'Dominic Cleal', 'Simon Levermann']
   spec.license    = 'Artistic-2.0'
   spec.email      = ['djberg96@gmail.com', 'dominic@cleal.org', 'simon-rubygems@slevermann.de']
@@ -11,8 +11,6 @@ Gem::Specification.new do |spec|
   spec.test_files = Dir['spec/**/*_spec.rb']
   spec.extensions = ['ext/rkerberos/extconf.rb']
   spec.files      = Dir['**/*'].grep_v(%r{\A(?:\.git|docker|Dockerfile)})
-
-  spec.extra_rdoc_files = ['README.md', 'CHANGES', 'MANIFEST', 'LICENSE'] + Dir['ext/rkerberos/*.c']
 
   spec.add_development_dependency('rake-compiler')
   spec.add_development_dependency('rspec', '>= 3.0')
