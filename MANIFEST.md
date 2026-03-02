@@ -1,16 +1,24 @@
-CHANGES.md
-rkerberos.gemspec
-MANIFEST.md
-Rakefile
-README
-ext/ccache.c
-ext/context.c
-ext/extconf.rb
-ext/kadm5.c
-ext/keytab.c
-ext/keytab_entry.c
-ext/rkerberos.c
-ext/rkerberos.h
-ext/policy.c
-ext/principal.c
-test/test_krb5.rb
+* CHANGES.md
+* rkerberos.gemspec
+* MANIFEST.md
+* Rakefile
+* README
+* ext/ccache.c
+* ext/context.c
+* ext/extconf.rb
+* ext/kadm5.c
+* ext/keytab.c
+* ext/keytab_entry.c
+* ext/rkerberos.c
+* ext/rkerberos.h
+* ext/policy.c
+* ext/principal.c
+* spec/config_spec.rb
+* spec/context_spec.rb
+* spec/credentials_spec.rb
+* spec/kadm5_spec.rb
+* spec/keytab_entry_spec.rb
+* spec/krb5_keytab_spec.rb
+* spec/krb5_spec.rb
+* spec/policy_spec.rb
+* spec/principal_spec.rb
