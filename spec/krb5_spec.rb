@@ -150,4 +150,10 @@ RSpec.describe Kerberos::Krb5 do
       expect(ccache.primary_principal).to include('@')
     end
   end
+
+  describe 'singleton methods' do
+    it 'returns a boolean for the thread_safe? method' do
+      expect(Kerberos::Krb5.thread_safe?).to satisfy{ |v| [true, false].include?(v) }
+    end
+  end
 end
