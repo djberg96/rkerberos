@@ -424,10 +424,10 @@ static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_pr
   if(ent->last_failed)
     rb_iv_set(v_principal, "@last_failed", rb_time_new(ent->last_failed, 0));
 
-  if(ent->last_failed)
+  if(ent->last_pwd_change)
     rb_iv_set(v_principal, "@last_password_change", rb_time_new(ent->last_pwd_change, 0));
 
-  if(ent->last_failed)
+  if(ent->last_success)
     rb_iv_set(v_principal, "@last_success", rb_time_new(ent->last_success, 0));
 
   rb_iv_set(v_principal, "@max_life", LONG2FIX(ent->max_life));
