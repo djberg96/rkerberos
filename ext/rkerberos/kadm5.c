@@ -725,6 +725,8 @@ static VALUE rkadm5_get_policy(VALUE self, VALUE v_name){
     v_arg[0] = v_hash;
 
     v_policy = rb_class_new_instance(1, v_arg, cKadm5Policy);
+
+    kadm5_free_policy_ent(ptr->handle, &ent);
   }
 
   return v_policy;
@@ -780,6 +782,8 @@ static VALUE rkadm5_find_policy(VALUE self, VALUE v_name){
     v_arg[0] = v_hash;
 
     v_policy = rb_class_new_instance(1, v_arg, cKadm5Policy);
+
+    kadm5_free_policy_ent(ptr->handle, &ent);
   }
 
   return v_policy;
