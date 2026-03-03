@@ -29,6 +29,10 @@ RSpec.describe Kerberos::Krb5::Keytab do
     end
   end
 
+  after(:all) do
+    FileUtils.rm_f(@keytab_file)
+  end
+
   subject(:keytab) { described_class.new }
 
   describe 'constructor' do
