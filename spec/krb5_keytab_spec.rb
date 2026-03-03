@@ -129,6 +129,52 @@ RSpec.describe Kerberos::Krb5::Keytab do
         described_class.foreach("BOGUS:/tmp/keytab") { |_| }
       }.to raise_error(Kerberos::Krb5::Exception)
     end
+
+    it 'does not leak resources when the block raises' do
+      expect {
+        described_class.foreach(@keytab_name) { |_| raise "boom" }
+      }.to raise_error(RuntimeError, "boom")
+    end
+
+    it 'does not leak resources when the block breaks' do
+      result = catch(:done) do
+        described_class.foreach(@keytab_name) { |_| throw :done, :escaped }
+        :completed
+      end
+      expect(result).to eq(:escaped)
+    end
+  end
+
+  describe '#each' do
+    it 'yields keytab entries for a valid keytab' do
+      kt = described_class.new(@keytab_name)
+      entries = []
+      kt.each { |entry| entries << entry }
+      expect(entries.length).to eq(2)
+      entries.each do |entry|
+        expect(entry).to be_a(Kerberos::Krb5::Keytab::Entry)
+        expect(entry.principal).to be_a(String)
+        expect(entry.vno).to be_a(Integer)
+        expect(entry.timestamp).to be_a(Time)
+        expect(entry.key).to be_a(Integer)
+      end
+    end
+
+    it 'does not leak resources when the block raises' do
+      kt = described_class.new(@keytab_name)
+      expect {
+        kt.each { |_| raise "boom" }
+      }.to raise_error(RuntimeError, "boom")
+    end
+
+    it 'does not leak resources when the block breaks' do
+      kt = described_class.new(@keytab_name)
+      result = catch(:done) do
+        kt.each { |_| throw :done, :escaped }
+        :completed
+      end
+      expect(result).to eq(:escaped)
+    end
   end
 
   describe '#get_entry' do

@@ -35,6 +35,56 @@ VALUE rkrb5_keytab_allocate(VALUE klass){
 
 // Allocation function for the Kerberos::Krb5::Keytab class.
 
+// Struct for rb_ensure in each()
+typedef struct {
+  krb5_context ctx;
+  krb5_keytab keytab;
+  krb5_kt_cursor cursor;
+  int cursor_active;
+} keytab_each_arg;
+
+static VALUE rkrb5_keytab_each_body(VALUE arg){
+  keytab_each_arg* ea = (keytab_each_arg*)arg;
+  krb5_keytab_entry entry;
+  krb5_error_code kerror;
+  char* principal;
+  VALUE v_kt_entry;
+
+  while((kerror = krb5_kt_next_entry(ea->ctx, ea->keytab, &entry, &ea->cursor)) == 0){
+    krb5_unparse_name(ea->ctx, entry.principal, &principal);
+
+    v_kt_entry = rb_class_new_instance(0, NULL, cKrb5KtEntry);
+
+    rb_iv_set(v_kt_entry, "@principal", rb_str_new2(principal));
+    rb_iv_set(v_kt_entry, "@timestamp", rb_time_new(entry.timestamp, 0));
+    rb_iv_set(v_kt_entry, "@vno", INT2FIX(entry.vno));
+    rb_iv_set(v_kt_entry, "@key", INT2FIX(entry.key.enctype));
+
+    krb5_free_unparsed_name(ea->ctx, principal);
+    krb5_kt_free_entry(ea->ctx, &entry);
+
+    rb_yield(v_kt_entry);
+  }
+
+  ea->cursor_active = 0;
+
+  kerror = krb5_kt_end_seq_get(ea->ctx, ea->keytab, &ea->cursor);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_kt_end_seq_get: %s", error_message(kerror));
+
+  return Qnil;
+}
+
+static VALUE rkrb5_keytab_each_ensure(VALUE arg){
+  keytab_each_arg* ea = (keytab_each_arg*)arg;
+
+  if(ea->cursor_active)
+    krb5_kt_end_seq_get(ea->ctx, ea->keytab, &ea->cursor);
+
+  return Qnil;
+}
+
 /*
  * call-seq:
  *
@@ -46,48 +96,22 @@ VALUE rkrb5_keytab_allocate(VALUE klass){
  */
 static VALUE rkrb5_keytab_each(VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
-  VALUE v_kt_entry;
   krb5_error_code kerror;
-  krb5_kt_cursor cursor;
-  krb5_keytab_entry entry;
-  char* principal;
+  keytab_each_arg ea;
 
   TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
-  kerror = krb5_kt_start_seq_get(
-    ptr->ctx,
-    ptr->keytab,
-    &cursor
-  );
+  ea.ctx = ptr->ctx;
+  ea.keytab = ptr->keytab;
+
+  kerror = krb5_kt_start_seq_get(ea.ctx, ea.keytab, &ea.cursor);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_kt_start_seq_get: %s", error_message(kerror));
 
-  while((kerror = krb5_kt_next_entry(ptr->ctx, ptr->keytab, &entry, &cursor)) == 0){
-    krb5_unparse_name(ptr->ctx, entry.principal, &principal);
+  ea.cursor_active = 1;
 
-    v_kt_entry = rb_class_new_instance(0, NULL, cKrb5KtEntry);
-
-    rb_iv_set(v_kt_entry, "@principal", rb_str_new2(principal));
-    rb_iv_set(v_kt_entry, "@timestamp", rb_time_new(entry.timestamp, 0));
-    rb_iv_set(v_kt_entry, "@vno", INT2FIX(entry.vno));
-    rb_iv_set(v_kt_entry, "@key", INT2FIX(entry.key.enctype));
-
-    rb_yield(v_kt_entry);
-
-    free(principal);
-
-    krb5_kt_free_entry(ptr->ctx, &entry);
-  }
-
-  kerror = krb5_kt_end_seq_get(
-    ptr->ctx,
-    ptr->keytab,
-    &cursor
-  );
-
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_kt_end_seq_get: %s", error_message(kerror));
+  rb_ensure(rkrb5_keytab_each_body, (VALUE)&ea, rkrb5_keytab_each_ensure, (VALUE)&ea);
 
   return self;
 }
@@ -462,6 +486,62 @@ static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
 
 // Singleton Methods
 
+// Struct for rb_ensure in foreach()
+typedef struct {
+  krb5_context ctx;
+  krb5_keytab keytab;
+  krb5_kt_cursor cursor;
+  int cursor_active;
+} keytab_foreach_arg;
+
+static VALUE rkrb5_s_keytab_foreach_body(VALUE arg){
+  keytab_foreach_arg* fa = (keytab_foreach_arg*)arg;
+  krb5_keytab_entry entry;
+  krb5_error_code kerror;
+  char* principal;
+  VALUE v_kt_entry;
+
+  while((kerror = krb5_kt_next_entry(fa->ctx, fa->keytab, &entry, &fa->cursor)) == 0){
+    krb5_unparse_name(fa->ctx, entry.principal, &principal);
+
+    v_kt_entry = rb_class_new_instance(0, NULL, cKrb5KtEntry);
+
+    rb_iv_set(v_kt_entry, "@principal", rb_str_new2(principal));
+    rb_iv_set(v_kt_entry, "@timestamp", rb_time_new(entry.timestamp, 0));
+    rb_iv_set(v_kt_entry, "@vno", INT2FIX(entry.vno));
+    rb_iv_set(v_kt_entry, "@key", INT2FIX(entry.key.enctype));
+
+    krb5_free_unparsed_name(fa->ctx, principal);
+    krb5_kt_free_entry(fa->ctx, &entry);
+
+    rb_yield(v_kt_entry);
+  }
+
+  fa->cursor_active = 0;
+
+  kerror = krb5_kt_end_seq_get(fa->ctx, fa->keytab, &fa->cursor);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_kt_end_seq_get: %s", error_message(kerror));
+
+  return Qnil;
+}
+
+static VALUE rkrb5_s_keytab_foreach_ensure(VALUE arg){
+  keytab_foreach_arg* fa = (keytab_foreach_arg*)arg;
+
+  if(fa->cursor_active)
+    krb5_kt_end_seq_get(fa->ctx, fa->keytab, &fa->cursor);
+
+  if(fa->keytab)
+    krb5_kt_close(fa->ctx, fa->keytab);
+
+  if(fa->ctx)
+    krb5_free_context(fa->ctx);
+
+  return Qnil;
+}
+
 /*
  * call-seq:
  *   Kerberos::Krb5::Keytab.foreach(keytab = nil){ |entry|
@@ -474,31 +554,26 @@ static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
  * If no +keytab+ is provided, then the default keytab is used.
  */
 static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
-  VALUE v_kt_entry;
   VALUE v_keytab_name;
   krb5_error_code kerror;
-  krb5_kt_cursor cursor;
-  krb5_keytab keytab;
-  krb5_keytab_entry entry;
-  krb5_context context;
-  char* principal;
+  keytab_foreach_arg fa;
   char keytab_name[MAX_KEYTAB_NAME_LEN];
+
+  memset(&fa, 0, sizeof(fa));
 
   rb_scan_args(argc, argv, "01", &v_keytab_name);
 
-  kerror = krb5_init_context(&context);
+  kerror = krb5_init_context(&fa.ctx);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
 
   // Use the default keytab name if one isn't provided.
   if(NIL_P(v_keytab_name)){
-    kerror = krb5_kt_default_name(context, keytab_name, MAX_KEYTAB_NAME_LEN);
+    kerror = krb5_kt_default_name(fa.ctx, keytab_name, MAX_KEYTAB_NAME_LEN);
 
     if(kerror){
-      if(context)
-        krb5_free_context(context);
-
+      krb5_free_context(fa.ctx);
       rb_raise(cKrb5Exception, "krb5_kt_default_name: %s", error_message(kerror));
     }
   }
@@ -508,73 +583,24 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
     keytab_name[MAX_KEYTAB_NAME_LEN - 1] = '\0';
   }
 
-  kerror = krb5_kt_resolve(
-    context,
-    keytab_name,
-    &keytab
-  );
+  kerror = krb5_kt_resolve(fa.ctx, keytab_name, &fa.keytab);
 
   if(kerror){
-    if(context)
-      krb5_free_context(context);
-
+    krb5_free_context(fa.ctx);
     rb_raise(cKrb5Exception, "krb5_kt_resolve: %s", error_message(kerror));
   }
 
-  kerror = krb5_kt_start_seq_get(
-    context,
-    keytab,
-    &cursor
-  );
+  kerror = krb5_kt_start_seq_get(fa.ctx, fa.keytab, &fa.cursor);
 
   if(kerror){
-    if(keytab)
-      krb5_kt_close(context, keytab);
-
-    if(context)
-      krb5_free_context(context);
-
+    krb5_kt_close(fa.ctx, fa.keytab);
+    krb5_free_context(fa.ctx);
     rb_raise(cKrb5Exception, "krb5_kt_start_seq_get: %s", error_message(kerror));
   }
 
-  while((kerror = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
-    krb5_unparse_name(context, entry.principal, &principal);
+  fa.cursor_active = 1;
 
-    v_kt_entry = rb_class_new_instance(0, NULL, cKrb5KtEntry);
-
-    rb_iv_set(v_kt_entry, "@principal", rb_str_new2(principal));
-    rb_iv_set(v_kt_entry, "@timestamp", rb_time_new(entry.timestamp, 0));
-    rb_iv_set(v_kt_entry, "@vno", INT2FIX(entry.vno));
-    rb_iv_set(v_kt_entry, "@key", INT2FIX(entry.key.enctype));
-
-    rb_yield(v_kt_entry);
-
-    free(principal);
-
-    krb5_kt_free_entry(context, &entry);
-  }
-
-  kerror = krb5_kt_end_seq_get(
-    context,
-    keytab,
-    &cursor
-  );
-
-  if(kerror){
-    if(keytab)
-      krb5_kt_close(context, keytab);
-
-    if(context)
-      krb5_free_context(context);
-
-    rb_raise(cKrb5Exception, "krb5_kt_end_seq_get: %s", error_message(kerror));
-  }
-
-  if(keytab)
-    krb5_kt_close(context, keytab);
-
-  if(context)
-    krb5_free_context(context);
+  rb_ensure(rkrb5_s_keytab_foreach_body, (VALUE)&fa, rkrb5_s_keytab_foreach_ensure, (VALUE)&fa);
 
   return Qnil;
 }
