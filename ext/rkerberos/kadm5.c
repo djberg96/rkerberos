@@ -18,6 +18,8 @@ void add_tl_data(krb5_int16 *, krb5_tl_data **,
 static void rkadm5_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KADM5 *k = (RUBY_KADM5 *)ptr;
+  if (k->handle)
+    kadm5_destroy(k->handle);
   if (k->princ)
     krb5_free_principal(k->ctx, k->princ);
   if (k->ctx)
@@ -381,14 +383,14 @@ static VALUE rkadm5_close(VALUE self){
   RUBY_KADM5* ptr;
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
 
+  if(ptr->handle)
+    kadm5_destroy(ptr->handle);
+
   if(ptr->princ)
     krb5_free_principal(ptr->ctx, ptr->princ);
 
   if(ptr->ctx)
     krb5_free_context(ptr->ctx);
-
-  if(ptr->handle)
-    kadm5_destroy(ptr->handle);
 
   free(ptr->db_args);
 
@@ -422,10 +424,10 @@ static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_pr
   if(ent->last_failed)
     rb_iv_set(v_principal, "@last_failed", rb_time_new(ent->last_failed, 0));
 
-  if(ent->last_failed)
+  if(ent->last_pwd_change)
     rb_iv_set(v_principal, "@last_password_change", rb_time_new(ent->last_pwd_change, 0));
 
-  if(ent->last_failed)
+  if(ent->last_success)
     rb_iv_set(v_principal, "@last_success", rb_time_new(ent->last_success, 0));
 
   rb_iv_set(v_principal, "@max_life", LONG2FIX(ent->max_life));
@@ -640,7 +642,7 @@ static VALUE rkadm5_create_policy(VALUE self, VALUE v_policy){
 
   if(RTEST(v_history_num)){
     mask |= KADM5_PW_HISTORY_NUM;
-    ent.pw_max_life = NUM2LONG(v_history_num);
+    ent.pw_history_num = NUM2LONG(v_history_num);
   }
 
   kerror = kadm5_create_policy(ptr->handle, &ent, mask);

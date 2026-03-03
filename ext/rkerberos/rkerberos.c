@@ -321,6 +321,9 @@ static VALUE rkrb5_change_password(VALUE self, VALUE v_old, VALUE v_new){
   if(!ptr->princ)
     rb_raise(cKrb5Exception, "no principal has been established");
 
+  krb5_free_cred_contents(ptr->ctx, &ptr->creds);
+  memset(&ptr->creds, 0, sizeof(ptr->creds));
+
   kerror = krb5_get_init_creds_password(
     ptr->ctx,
     &ptr->creds,
@@ -544,6 +547,11 @@ static VALUE rkrb5_close(VALUE self){
 
   TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
+  if(ptr->keytab){
+    krb5_kt_close(ptr->ctx, ptr->keytab);
+    ptr->keytab = NULL;
+  }
+
   if(ptr->ctx)
     krb5_free_cred_contents(ptr->ctx, &ptr->creds);
 
@@ -660,6 +668,8 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
       }
       rb_hash_aset(v_enctypes, INT2FIX(ktypes[i]), rb_str_new2(encoding));
     }
+
+    krb5_free_enctypes(ptr->ctx, ktypes);
   }
 
   return v_enctypes;
