@@ -372,6 +372,15 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
 
+  // Free resources from a previous call to avoid leaks on repeated use.
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
+
+  krb5_free_cred_contents(ptr->ctx, &ptr->creds);
+  memset(&ptr->creds, 0, sizeof(ptr->creds));
+
   rb_scan_args(argc, argv, "21", &v_user, &v_pass, &v_service);
 
   Check_Type(v_user, T_STRING);
@@ -435,6 +444,15 @@ static VALUE rkrb5_authenticate_bang(int argc, VALUE* argv, VALUE self){
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
+
+  // Free resources from a previous call to avoid leaks on repeated use.
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
+
+  krb5_free_cred_contents(ptr->ctx, &ptr->creds);
+  memset(&ptr->creds, 0, sizeof(ptr->creds));
 
   // Require user and password, optional service
   rb_scan_args(argc, argv, "21", &v_user, &v_pass, &v_service);
@@ -560,6 +578,12 @@ static VALUE rkrb5_get_default_principal(VALUE self){
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
+
+  // Free previous principal to avoid leaks on repeated calls.
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
 
   // Get the default credentials cache
   kerror = krb5_cc_default(ptr->ctx, &ccache);
