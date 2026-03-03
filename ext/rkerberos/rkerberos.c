@@ -547,6 +547,11 @@ static VALUE rkrb5_close(VALUE self){
 
   TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
+  if(ptr->keytab){
+    krb5_kt_close(ptr->ctx, ptr->keytab);
+    ptr->keytab = NULL;
+  }
+
   if(ptr->ctx)
     krb5_free_cred_contents(ptr->ctx, &ptr->creds);
 
