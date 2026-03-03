@@ -3,6 +3,8 @@
 ARG RUBY=3.4
 FROM ruby:${RUBY}
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install MIT Kerberos, KDC, admin server, and build tools
 RUN apt-get update && \
         apt-get install -y --no-install-recommends \
