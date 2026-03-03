@@ -177,24 +177,6 @@ RSpec.describe Kerberos::Krb5 do
       # Password must satisfy strict_policy (minlength=8, minclasses=3).
       let(:compliant_pw) { 'Changeme1!' }
 
-      before do
-        Kerberos::Kadm5.new(
-          principal: ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM'),
-          password: ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword')
-        ) do |kadmin|
-          kadmin.set_password(policy_user, compliant_pw)
-        end
-      end
-
-      after do
-        Kerberos::Kadm5.new(
-          principal: ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM'),
-          password: ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword')
-        ) do |kadmin|
-          kadmin.set_password(policy_user, compliant_pw)
-        end
-      end
-
       it 'raises an exception with the KDC rejection reason' do
         krb5.get_init_creds_password(policy_user, compliant_pw)
         expect {
