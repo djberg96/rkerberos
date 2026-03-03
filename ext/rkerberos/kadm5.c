@@ -1024,13 +1024,16 @@ static VALUE rkadm5_randkey_principal(VALUE self, VALUE v_user){
 
   kerror = kadm5_randkey_principal(ptr->handle, princ, &keys, &n_keys);
 
-  if(kerror)
+  if(kerror){
+    krb5_free_principal(ptr->ctx, princ);
     rb_raise(cKadm5Exception, "kadm5_randkey_principal: %s (%li)", error_message(kerror), kerror);
+  }
 
   for(i = 0; i < n_keys; i++)
     krb5_free_keyblock_contents(ptr->ctx, &keys[i]);
 
   free(keys);
+  krb5_free_principal(ptr->ctx, princ);
 
   return INT2NUM(n_keys);
 }
