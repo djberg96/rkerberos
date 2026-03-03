@@ -43,4 +43,38 @@ RSpec.describe Kerberos::Krb5::Keytab do
       }.to raise_error(Kerberos::Krb5::Keytab::Exception)
     end
   end
+
+  describe '#keytab_name and #keytab_type' do
+    it 'returns the underlying name and type strings' do
+      kt = described_class.new(@keytab_name)
+      expect(kt).to respond_to(:keytab_name)
+      expect(kt).to respond_to(:keytab_type)
+
+      expect(kt.keytab_name).to be_a(String)
+      expect(kt.keytab_type).to be_a(String)
+
+      # name should include the residual portion we supplied
+      expect(kt.keytab_name).to include(File.basename(@keytab_file))
+      # type should match the scheme
+      expect(kt.keytab_type.downcase).to eq("file")
+    end
+  end
+
+  describe '#dup' do
+    it 'creates an independent handle referring to same keytab' do
+      kt1 = described_class.new(@keytab_name)
+      kt2 = kt1.dup
+      expect(kt2).to be_a(described_class)
+      expect(kt2.keytab_name).to eq(kt1.keytab_name)
+
+      # closing one should not invalidate the other
+      kt1.close
+      expect { kt2.keytab_name }.not_to raise_error
+    end
+
+    it 'clone is an alias for dup' do
+      kt = described_class.new(@keytab_name)
+      expect(kt.method(:clone)).to eq(kt.method(:dup))
+    end
+  end
 end
