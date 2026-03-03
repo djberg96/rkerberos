@@ -8,6 +8,7 @@ VALUE cKadm5PrincipalNotFoundException;
 
 // Prototype
 static VALUE rkadm5_close(VALUE);
+static void free_tl_data(krb5_tl_data *);
 char** parse_db_args(VALUE v_db_args);
 void add_db_args(kadm5_principal_ent_rec*, char**);
 void add_tl_data(krb5_int16 *, krb5_tl_data **,
