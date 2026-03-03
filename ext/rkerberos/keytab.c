@@ -519,11 +519,11 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
   );
 
   if(kerror){
-    if(context)
-      krb5_free_context(context);
-
     if(keytab)
       krb5_kt_close(context, keytab);
+
+    if(context)
+      krb5_free_context(context);
 
     rb_raise(cKrb5Exception, "krb5_kt_start_seq_get: %s", error_message(kerror));
   }
@@ -552,11 +552,11 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
   );
 
   if(kerror){
-    if(context)
-      krb5_free_context(context);
-
     if(keytab)
       krb5_kt_close(context, keytab);
+
+    if(context)
+      krb5_free_context(context);
 
     rb_raise(cKrb5Exception, "krb5_kt_end_seq_get: %s", error_message(kerror));
   }

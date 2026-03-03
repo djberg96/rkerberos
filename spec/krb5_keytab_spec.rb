@@ -92,6 +92,45 @@ RSpec.describe Kerberos::Krb5::Keytab do
     end
   end
 
+  describe '.foreach' do
+    it 'yields keytab entries for a valid keytab' do
+      entries = []
+      described_class.foreach(@keytab_name) { |entry| entries << entry }
+      expect(entries.length).to eq(2)
+      entries.each do |entry|
+        expect(entry).to be_a(Kerberos::Krb5::Keytab::Entry)
+        expect(entry.principal).to be_a(String)
+        expect(entry.principal).to match(/@#{Regexp.quote(@realm)}$/)
+        expect(entry.vno).to be_a(Integer)
+        expect(entry.timestamp).to be_a(Time)
+        expect(entry.key).to be_a(Integer)
+      end
+    end
+
+    it 'uses the default keytab when no name is provided' do
+      # The default keytab may not exist in the test container, so we
+      # just verify it attempts to use it (raises keytab-related error
+      # rather than ArgumentError or similar).
+      begin
+        described_class.foreach { |_| }
+      rescue Kerberos::Krb5::Exception
+        # Expected when default keytab is absent
+      end
+    end
+
+    it 'raises an error for a non-existent keytab file' do
+      expect {
+        described_class.foreach("FILE:/no/such/keytab") { |_| }
+      }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'raises an error for an invalid keytab type' do
+      expect {
+        described_class.foreach("BOGUS:/tmp/keytab") { |_| }
+      }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
+
   describe '#dup' do
     it 'creates an independent handle referring to same keytab' do
       kt1 = described_class.new(@keytab_name)
