@@ -60,6 +60,38 @@ RSpec.describe Kerberos::Krb5::Keytab do
     end
   end
 
+  describe '#close' do
+    it 'returns true' do
+      kt = described_class.new(@keytab_name)
+      expect(kt.close).to eq(true)
+    end
+
+    it 'can be called multiple times without error' do
+      kt = described_class.new(@keytab_name)
+      kt.close
+      expect { kt.close }.not_to raise_error
+    end
+
+    it 'raises an error when calling keytab_name after close' do
+      kt = described_class.new(@keytab_name)
+      kt.close
+      expect { kt.keytab_name }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'raises an error when calling keytab_type after close' do
+      kt = described_class.new(@keytab_name)
+      kt.close
+      expect { kt.keytab_type }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'does not segfault when garbage collected after close' do
+      kt = described_class.new(@keytab_name)
+      kt.close
+      kt = nil
+      GC.start
+    end
+  end
+
   describe '#dup' do
     it 'creates an independent handle referring to same keytab' do
       kt1 = described_class.new(@keytab_name)

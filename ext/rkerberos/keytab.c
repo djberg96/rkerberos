@@ -7,7 +7,7 @@ VALUE cKrb5Keytab, cKrb5KeytabException;
 void rkrb5_keytab_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KRB5_KEYTAB *kt = (RUBY_KRB5_KEYTAB *)ptr;
-  if (kt->keytab)
+  if (kt->keytab && kt->ctx)
     krb5_kt_close(kt->ctx, kt->keytab);
   if (kt->ctx)
     krb5_free_cred_contents(kt->ctx, &kt->creds);
@@ -129,6 +129,11 @@ static VALUE rkrb5_keytab_close(VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
 
   TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
+
+  if(ptr->keytab && ptr->ctx){
+    krb5_kt_close(ptr->ctx, ptr->keytab);
+    ptr->keytab = NULL;
+  }
 
   if(ptr->ctx)
     krb5_free_cred_contents(ptr->ctx, &ptr->creds);
