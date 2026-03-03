@@ -314,8 +314,8 @@ static VALUE rkrb5_ccache_dup(VALUE self){
   // perform ccache duplication using the new context
   kerror = krb5_cc_dup(newptr->ctx, ptr->ccache, &newptr->ccache);
   if(kerror){
-    if(newptr->ctx)
-      krb5_free_context(newptr->ctx);
+    krb5_free_context(newptr->ctx);
+    newptr->ctx = NULL;
     rb_raise(cKrb5Exception, "krb5_cc_dup: %s", error_message(kerror));
   }
 
