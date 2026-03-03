@@ -950,15 +950,14 @@ static VALUE rkadm5_get_principals(int argc, VALUE* argv, VALUE self){
  * KADM5_PRIV_ADD    (0x02) => "ADD"
  * KADM5_PRIV_MODIFY (0x04) => "MODIFY"
  * KADM5_PRIV_DELETE (0x08) => "DELETE"
+ *
  */
 static VALUE rkadm5_get_privs(int argc, VALUE* argv, VALUE self){
   RUBY_KADM5* ptr;
   VALUE v_return = Qnil;
   VALUE v_strings = Qfalse;
   kadm5_ret_t kerror;
-  unsigned int i;
   long privs;
-  int result = 0;
 
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
 
@@ -972,31 +971,17 @@ static VALUE rkadm5_get_privs(int argc, VALUE* argv, VALUE self){
   if(RTEST(v_strings)){
     v_return = rb_ary_new();
 
-    for(i = 0; i < sizeof(privs); i++){
-      result |= (privs & 1 << i);
-      switch(privs & 1 << i){
-        case KADM5_PRIV_GET:
-          rb_ary_push(v_return, rb_str_new2("GET"));
-          break;
-        case KADM5_PRIV_ADD:
-          rb_ary_push(v_return, rb_str_new2("ADD"));
-          break;
-        case KADM5_PRIV_MODIFY:
-          rb_ary_push(v_return, rb_str_new2("MODIFY"));
-          break;
-        case KADM5_PRIV_DELETE:
-          rb_ary_push(v_return, rb_str_new2("DELETE"));
-          break;
-        default:
-          rb_ary_push(v_return, rb_str_new2("UNKNOWN"));
-      };
-    }
+    if(privs & KADM5_PRIV_GET)
+      rb_ary_push(v_return, rb_str_new2("GET"));
+    if(privs & KADM5_PRIV_ADD)
+      rb_ary_push(v_return, rb_str_new2("ADD"));
+    if(privs & KADM5_PRIV_MODIFY)
+      rb_ary_push(v_return, rb_str_new2("MODIFY"));
+    if(privs & KADM5_PRIV_DELETE)
+      rb_ary_push(v_return, rb_str_new2("DELETE"));
   }
   else{
-    for(i = 0; i < sizeof(privs); i++){
-      result |= (privs & 1 << i);
-    }
-    v_return = INT2FIX(result);
+    v_return = LONG2FIX(privs);
   }
 
   return v_return;
