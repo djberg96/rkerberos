@@ -100,7 +100,10 @@ namespace :spec do
 
     FileUtils.rm_rf('Gemfile.lock')
     begin
-      sh "#{compose} build --no-cache rkerberos-test" unless fast
+      unless fast
+        sh "#{compose} build --no-cache kerberos-kdc"
+        sh "#{compose} build --no-cache rkerberos-test"
+      end
       sh "#{compose} run --rm rkerberos-test"
     ensure
       # redirect stderr so missing-container messages don't appear
