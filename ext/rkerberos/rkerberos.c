@@ -321,6 +321,9 @@ static VALUE rkrb5_change_password(VALUE self, VALUE v_old, VALUE v_new){
   if(!ptr->princ)
     rb_raise(cKrb5Exception, "no principal has been established");
 
+  krb5_free_cred_contents(ptr->ctx, &ptr->creds);
+  memset(&ptr->creds, 0, sizeof(ptr->creds));
+
   kerror = krb5_get_init_creds_password(
     ptr->ctx,
     &ptr->creds,
