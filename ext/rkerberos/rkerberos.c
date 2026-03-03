@@ -348,8 +348,23 @@ static VALUE rkrb5_change_password(VALUE self, VALUE v_old, VALUE v_new){
     &result_string
   );
 
-  if(kerror)
+  if(kerror){
+    krb5_free_data_contents(ptr->ctx, &result_string);
+    krb5_free_data_contents(ptr->ctx, &pw_result_string);
     rb_raise(cKrb5Exception, "krb5_change_password: %s", error_message(kerror));
+  }
+
+  if(pw_result){
+    VALUE v_msg = (result_string.length > 0)
+      ? rb_str_new(result_string.data, result_string.length)
+      : rb_str_new_cstr("password change rejected");
+    krb5_free_data_contents(ptr->ctx, &result_string);
+    krb5_free_data_contents(ptr->ctx, &pw_result_string);
+    rb_raise(cKrb5Exception, "krb5_change_password: %s", StringValueCStr(v_msg));
+  }
+
+  krb5_free_data_contents(ptr->ctx, &result_string);
+  krb5_free_data_contents(ptr->ctx, &pw_result_string);
 
   return Qtrue;
 }
