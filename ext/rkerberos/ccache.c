@@ -207,6 +207,11 @@ static VALUE rkrb5_ccache_primary_principal(VALUE self){
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
 
+  if(ptr->principal){
+    krb5_free_principal(ptr->ctx, ptr->principal);
+    ptr->principal = NULL;
+  }
+
   kerror = krb5_cc_get_principal(ptr->ctx, ptr->ccache, &ptr->principal);
 
   if(kerror)
