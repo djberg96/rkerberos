@@ -18,6 +18,8 @@ void add_tl_data(krb5_int16 *, krb5_tl_data **,
 static void rkadm5_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KADM5 *k = (RUBY_KADM5 *)ptr;
+  if (k->handle)
+    kadm5_destroy(k->handle);
   if (k->princ)
     krb5_free_principal(k->ctx, k->princ);
   if (k->ctx)
@@ -381,14 +383,14 @@ static VALUE rkadm5_close(VALUE self){
   RUBY_KADM5* ptr;
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
 
+  if(ptr->handle)
+    kadm5_destroy(ptr->handle);
+
   if(ptr->princ)
     krb5_free_principal(ptr->ctx, ptr->princ);
 
   if(ptr->ctx)
     krb5_free_context(ptr->ctx);
-
-  if(ptr->handle)
-    kadm5_destroy(ptr->handle);
 
   free(ptr->db_args);
 
