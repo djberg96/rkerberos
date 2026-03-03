@@ -206,6 +206,11 @@ static VALUE rkadm5_set_password(VALUE self, VALUE v_user, VALUE v_pass){
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
 
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
+
   kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
   if(kerror)
@@ -238,6 +243,11 @@ static VALUE rkadm5_set_pwexpire(VALUE self, VALUE v_user, VALUE v_pwexpire){
 
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
+
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
 
   kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
@@ -336,6 +346,11 @@ static VALUE rkadm5_delete_principal(VALUE self, VALUE v_user){
 
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
+
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
 
   kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
@@ -465,6 +480,11 @@ static VALUE rkadm5_find_principal(VALUE self, VALUE v_user){
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
 
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
+
   kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
   if(kerror)
@@ -520,6 +540,11 @@ static VALUE rkadm5_get_principal(VALUE self, VALUE v_user){
 
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
+
+  if(ptr->princ){
+    krb5_free_principal(ptr->ctx, ptr->princ);
+    ptr->princ = NULL;
+  }
 
   kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
 
