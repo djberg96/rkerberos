@@ -300,6 +300,55 @@ static VALUE rkrb5_keytab_get_entry(int argc, VALUE* argv, VALUE self){
 
 /*
  * call-seq:
+ *   keytab.keytab_name
+ *
+ * Return the name associated with the open keytab. This returns the canonical
+ * type:residual string used internally by the library. It will usually be the
+ * same as the +name+ method, but could be different.
+ */
+static VALUE rkrb5_keytab_get_name(VALUE self){
+  RUBY_KRB5_KEYTAB* ptr;
+  krb5_error_code kerror;
+  char name[MAX_KEYTAB_NAME_LEN];
+
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  kerror = krb5_kt_get_name(ptr->ctx, ptr->keytab, name, MAX_KEYTAB_NAME_LEN);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_kt_get_name: %s", error_message(kerror));
+
+  return rb_str_new2(name);
+}
+
+/*
+ * call-seq:
+ *   keytab.keytab_type
+ *
+ * Return the keytab type portion, e.g. "FILE". Raises an error if nil.
+ */
+static VALUE rkrb5_keytab_get_type(VALUE self){
+  RUBY_KRB5_KEYTAB* ptr;
+  const char *type;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  type = krb5_kt_get_type(ptr->ctx, ptr->keytab);
+
+  if(!type)
+    rb_raise(cKrb5Exception, "krb5_kt_get_type returned NULL");
+
+  return rb_str_new2(type);
+}
+
+/*
+ * call-seq:
  *   Kerberos::Krb5::Keytab.new(name = nil)
  *
  * Creates and returns a new Kerberos::Krb5::Keytab object. This initializes
@@ -504,6 +553,8 @@ void Init_keytab(void){
   rb_define_method(cKrb5Keytab, "close", rkrb5_keytab_close, 0);
   rb_define_method(cKrb5Keytab, "each", rkrb5_keytab_each, 0);
   rb_define_method(cKrb5Keytab, "get_entry", rkrb5_keytab_get_entry, -1);
+  rb_define_method(cKrb5Keytab, "keytab_name", rkrb5_keytab_get_name, 0);
+  rb_define_method(cKrb5Keytab, "keytab_type", rkrb5_keytab_get_type, 0);
 
   // TODO: Move these into Kadm5 and/or figure out how to set the vno properly.
   // rb_define_method(cKrb5Keytab, "add_entry", rkrb5_keytab_add_entry, -1);

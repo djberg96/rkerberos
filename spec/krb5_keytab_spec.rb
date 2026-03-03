@@ -43,4 +43,20 @@ RSpec.describe Kerberos::Krb5::Keytab do
       }.to raise_error(Kerberos::Krb5::Keytab::Exception)
     end
   end
+
+  describe '#keytab_name and #keytab_type' do
+    it 'returns the underlying name and type strings' do
+      kt = described_class.new(@keytab_name)
+      expect(kt).to respond_to(:keytab_name)
+      expect(kt).to respond_to(:keytab_type)
+
+      expect(kt.keytab_name).to be_a(String)
+      expect(kt.keytab_type).to be_a(String)
+
+      # name should include the residual portion we supplied
+      expect(kt.keytab_name).to include(File.basename(@keytab_file))
+      # type should match the scheme
+      expect(kt.keytab_type.downcase).to eq("file")
+    end
+  end
 end
