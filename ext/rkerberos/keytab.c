@@ -414,6 +414,7 @@ static VALUE rkrb5_keytab_dup(VALUE self){
   kerror = krb5_kt_dup(newptr->ctx, ptr->keytab, &newptr->keytab);
   if(kerror){
     krb5_free_context(newptr->ctx);
+    newptr->ctx = NULL;
     rb_raise(cKrb5Exception, "krb5_kt_dup: %s", error_message(kerror));
   }
 

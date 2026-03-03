@@ -263,12 +263,12 @@ static VALUE rkadm5_config_inspect(VALUE self){
   rb_str_buf_append(v_str, rb_inspect(rb_iv_get(self, "@mkey_from_kbd")));
   rb_str_buf_cat2(v_str, " ");
 
-  rb_str_buf_cat2(v_str, "maxlife=");
-  rb_str_buf_append(v_str, rb_inspect(rb_iv_get(self, "@maxlife")));
+  rb_str_buf_cat2(v_str, "max_life=");
+  rb_str_buf_append(v_str, rb_inspect(rb_iv_get(self, "@max_life")));
   rb_str_buf_cat2(v_str, " ");
 
-  rb_str_buf_cat2(v_str, "maxrlife=");
-  rb_str_buf_append(v_str, rb_inspect(rb_iv_get(self, "@maxrlife")));
+  rb_str_buf_cat2(v_str, "max_rlife=");
+  rb_str_buf_append(v_str, rb_inspect(rb_iv_get(self, "@max_rlife")));
   rb_str_buf_cat2(v_str, " ");
 
   rb_str_buf_cat2(v_str, "num_keysalts=");

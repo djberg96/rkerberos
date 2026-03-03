@@ -8,6 +8,7 @@ VALUE cKadm5PrincipalNotFoundException;
 
 // Prototype
 static VALUE rkadm5_close(VALUE);
+static void free_tl_data(krb5_tl_data *);
 char** parse_db_args(VALUE v_db_args);
 void add_db_args(kadm5_principal_ent_rec*, char**);
 void add_tl_data(krb5_int16 *, krb5_tl_data **,
@@ -74,6 +75,7 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   char* pass = NULL;
   char* keytab = NULL;
   char* service = NULL;
+  char default_keytab_name[MAX_KEYTAB_NAME_LEN];
   krb5_error_code kerror;
 
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
@@ -128,14 +130,12 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   // The docs say I can use NULL to get the default, but reality appears to be otherwise.
   if(RTEST(v_keytab)){
     if(TYPE(v_keytab) == T_TRUE){
-      char default_name[MAX_KEYTAB_NAME_LEN];
-
-      kerror = krb5_kt_default_name(ptr->ctx, default_name, MAX_KEYTAB_NAME_LEN);
+      kerror = krb5_kt_default_name(ptr->ctx, default_keytab_name, MAX_KEYTAB_NAME_LEN);
 
       if(kerror)
         rb_raise(cKrb5Exception, "krb5_kt_default_name: %s", error_message(kerror));
 
-      keytab = default_name;
+      keytab = default_keytab_name;
     }
     else{
       Check_Type(v_keytab, T_STRING);
@@ -321,15 +321,21 @@ static VALUE rkadm5_create_principal(int argc, VALUE* argv, VALUE self){
 
   kerror = krb5_parse_name(ptr->ctx, user, &princ.principal);
 
-  if(kerror)
+  if(kerror){
+    free_tl_data(princ.tl_data);
     rb_raise(cKadm5Exception, "krb5_parse_name: %s", error_message(kerror));
+  }
 
   kerror = kadm5_create_principal(ptr->handle, &princ, mask, pass);
 
-  if(kerror)
+  if(kerror){
+    krb5_free_principal(ptr->ctx, princ.principal);
+    free_tl_data(princ.tl_data);
     rb_raise(cKadm5Exception, "kadm5_create_principal: %s", error_message(kerror));
+  }
 
   krb5_free_principal(ptr->ctx, princ.principal);
+  free_tl_data(princ.tl_data);
 
   return self;
 }
@@ -943,15 +949,14 @@ static VALUE rkadm5_get_principals(int argc, VALUE* argv, VALUE self){
  * KADM5_PRIV_ADD    (0x02) => "ADD"
  * KADM5_PRIV_MODIFY (0x04) => "MODIFY"
  * KADM5_PRIV_DELETE (0x08) => "DELETE"
+ *
  */
 static VALUE rkadm5_get_privs(int argc, VALUE* argv, VALUE self){
   RUBY_KADM5* ptr;
   VALUE v_return = Qnil;
   VALUE v_strings = Qfalse;
   kadm5_ret_t kerror;
-  unsigned int i;
   long privs;
-  int result = 0;
 
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
 
@@ -965,31 +970,17 @@ static VALUE rkadm5_get_privs(int argc, VALUE* argv, VALUE self){
   if(RTEST(v_strings)){
     v_return = rb_ary_new();
 
-    for(i = 0; i < sizeof(privs); i++){
-      result |= (privs & 1 << i);
-      switch(privs & 1 << i){
-        case KADM5_PRIV_GET:
-          rb_ary_push(v_return, rb_str_new2("GET"));
-          break;
-        case KADM5_PRIV_ADD:
-          rb_ary_push(v_return, rb_str_new2("ADD"));
-          break;
-        case KADM5_PRIV_MODIFY:
-          rb_ary_push(v_return, rb_str_new2("MODIFY"));
-          break;
-        case KADM5_PRIV_DELETE:
-          rb_ary_push(v_return, rb_str_new2("DELETE"));
-          break;
-        default:
-          rb_ary_push(v_return, rb_str_new2("UNKNOWN"));
-      };
-    }
+    if(privs & KADM5_PRIV_GET)
+      rb_ary_push(v_return, rb_str_new2("GET"));
+    if(privs & KADM5_PRIV_ADD)
+      rb_ary_push(v_return, rb_str_new2("ADD"));
+    if(privs & KADM5_PRIV_MODIFY)
+      rb_ary_push(v_return, rb_str_new2("MODIFY"));
+    if(privs & KADM5_PRIV_DELETE)
+      rb_ary_push(v_return, rb_str_new2("DELETE"));
   }
   else{
-    for(i = 0; i < sizeof(privs); i++){
-      result |= (privs & 1 << i);
-    }
-    v_return = INT2FIX(result);
+    v_return = LONG2FIX(privs);
   }
 
   return v_return;
@@ -1024,13 +1015,16 @@ static VALUE rkadm5_randkey_principal(VALUE self, VALUE v_user){
 
   kerror = kadm5_randkey_principal(ptr->handle, princ, &keys, &n_keys);
 
-  if(kerror)
+  if(kerror){
+    krb5_free_principal(ptr->ctx, princ);
     rb_raise(cKadm5Exception, "kadm5_randkey_principal: %s (%li)", error_message(kerror), kerror);
+  }
 
   for(i = 0; i < n_keys; i++)
     krb5_free_keyblock_contents(ptr->ctx, &keys[i]);
 
   free(keys);
+  krb5_free_principal(ptr->ctx, princ);
 
   return INT2NUM(n_keys);
 }
@@ -1051,7 +1045,7 @@ char** parse_db_args(VALUE v_db_args){
     case T_ARRAY:
       // Multiple arguments
       array_length = RARRAY_LEN(v_db_args);
-      db_args = (char **) malloc(array_length * sizeof(char *) + 1);
+      db_args = (char **) malloc((array_length + 1) * sizeof(char *));
       for(long i = 0; i < array_length; ++i){
         VALUE elem = rb_ary_entry(v_db_args, i);
         Check_Type(elem, T_STRING);
@@ -1083,6 +1077,15 @@ void add_db_args(kadm5_principal_ent_rec* entry, char** db_args){
 /**
  * Source code taken from kadmin source code at https://github.com/krb5/krb5/blob/master/src/kadmin/cli/kadmin.c
  */
+static void free_tl_data(krb5_tl_data *tl){
+  while(tl){
+    krb5_tl_data *next = tl->tl_data_next;
+    free(tl->tl_data_contents);
+    free(tl);
+    tl = next;
+  }
+}
+
 void add_tl_data(krb5_int16 *n_tl_datap, krb5_tl_data **tl_datap,
   krb5_int16 tl_type, krb5_ui_2 len, krb5_octet *contents){
   krb5_tl_data* tl_data;

@@ -58,5 +58,44 @@ RSpec.describe Kerberos::Kadm5 do
     end
   end
 
-  # ... (Due to length, only a representative subset of tests is shown. The rest should be ported similarly.)
+  describe '#get_privileges' do
+    before(:each) do
+      @kadm5 = described_class.new(principal: user, password: pass)
+    end
+
+    after(:each) do
+      @kadm5.close
+    end
+
+    it 'returns an integer bitmask by default' do
+      result = @kadm5.get_privileges
+      expect(result).to be_a(Integer)
+      expect(result).not_to eq(0)
+    end
+
+    it 'returns an array of strings when passed a truthy argument' do
+      result = @kadm5.get_privileges(true)
+      expect(result).to be_a(Array)
+      expect(result).not_to be_empty
+      expect(result).to all(be_a(String))
+    end
+
+    it 'only contains valid privilege names' do
+      result = @kadm5.get_privileges(true)
+      valid = %w[GET ADD MODIFY DELETE]
+      result.each do |priv|
+        expect(valid).to include(priv)
+      end
+    end
+
+    it 'does not contain UNKNOWN entries' do
+      result = @kadm5.get_privileges(true)
+      expect(result).not_to include('UNKNOWN')
+    end
+
+    it 'includes GET for an admin principal' do
+      result = @kadm5.get_privileges(true)
+      expect(result).to include('GET')
+    end
+  end
 end

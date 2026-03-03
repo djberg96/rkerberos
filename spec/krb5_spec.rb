@@ -116,6 +116,76 @@ RSpec.describe Kerberos::Krb5 do
     end
   end
 
+  describe '#change_password' do
+    before do
+      # Ensure testuser1 has a known password before each test.
+      Kerberos::Kadm5.new(
+        principal: ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM'),
+        password: ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword')
+      ) do |kadmin|
+        kadmin.set_password(user, 'changeme')
+      end
+    end
+
+    after do
+      # Reset to known password so later tests are not affected.
+      Kerberos::Kadm5.new(
+        principal: ENV.fetch('KRB5_ADMIN_PRINCIPAL', 'admin/admin@EXAMPLE.COM'),
+        password: ENV.fetch('KRB5_ADMIN_PASSWORD', 'adminpassword')
+      ) do |kadmin|
+        kadmin.set_password(user, 'changeme')
+      end
+    end
+
+    it 'responds to change_password' do
+      expect(krb5).to respond_to(:change_password)
+    end
+
+    it 'requires exactly two arguments' do
+      expect { krb5.change_password }.to raise_error(ArgumentError)
+      expect { krb5.change_password('old') }.to raise_error(ArgumentError)
+      expect { krb5.change_password('old', 'new', 'extra') }.to raise_error(ArgumentError)
+    end
+
+    it 'raises if no principal has been established' do
+      expect { krb5.change_password('changeme', 'newpass1A!') }.to raise_error(Kerberos::Krb5::Exception, /no principal/)
+    end
+
+    it 'changes the password successfully' do
+      krb5.get_init_creds_password(user, 'changeme')
+      expect(krb5.change_password('changeme', 'Newpass99!')).to be true
+      # Verify we can authenticate with the new password
+      krb5_check = described_class.new
+      expect(krb5_check.get_init_creds_password(user, 'Newpass99!')).to be true
+      krb5_check.close
+    end
+
+    it 'raises with a meaningful message when the old password is wrong' do
+      krb5.get_init_creds_password(user, 'changeme')
+      expect {
+        krb5.change_password('wrongpass', 'Newpass99!')
+      }.to raise_error(Kerberos::Krb5::Exception, /krb5_(get_init_creds_password|change_password)/)
+    end
+
+    it 'requires string arguments' do
+      expect { krb5.change_password(1, 'new') }.to raise_error(TypeError)
+      expect { krb5.change_password('old', 1) }.to raise_error(TypeError)
+    end
+
+    context 'when the KDC rejects the new password due to policy' do
+      let(:policy_user) { "policyuser@#{@realm}" }
+      # Password must satisfy strict_policy (minlength=8, minclasses=3).
+      let(:compliant_pw) { 'Changeme1!' }
+
+      it 'raises an exception with the KDC rejection reason' do
+        krb5.get_init_creds_password(policy_user, compliant_pw)
+        expect {
+          krb5.change_password(compliant_pw, 'a')
+        }.to raise_error(Kerberos::Krb5::Exception, /krb5_change_password/)
+      end
+    end
+  end
+
   describe '#get_init_creds_keytab' do
     before(:each) do
       @kt_file = File.join(Dir.tmpdir, "test_get_init_creds_#{Process.pid}_#{rand(10000)}.keytab")
