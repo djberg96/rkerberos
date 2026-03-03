@@ -217,7 +217,10 @@ static VALUE rkrb5_ccache_primary_principal(VALUE self){
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_unparse_name: %s", error_message(kerror));
 
-  return rb_str_new2(name);
+  VALUE v_name = rb_str_new2(name);
+  krb5_free_unparsed_name(ptr->ctx, name);
+
+  return v_name;
 }
 
 // Simple wrapper around krb5_cc_get_principal returning a principal name string.

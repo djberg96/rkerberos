@@ -425,6 +425,7 @@ static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_pr
       rb_raise(cKadm5Exception, "krb5_unparse_name: %s", error_message(kerror));
 
     rb_iv_set(v_principal, "@mod_name", rb_str_new2(mod_name));
+    krb5_free_unparsed_name(ptr->ctx, mod_name);
   }
 
   if(ent->pw_expiration)
