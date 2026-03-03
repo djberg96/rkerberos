@@ -321,15 +321,21 @@ static VALUE rkadm5_create_principal(int argc, VALUE* argv, VALUE self){
 
   kerror = krb5_parse_name(ptr->ctx, user, &princ.principal);
 
-  if(kerror)
+  if(kerror){
+    free_tl_data(princ.tl_data);
     rb_raise(cKadm5Exception, "krb5_parse_name: %s", error_message(kerror));
+  }
 
   kerror = kadm5_create_principal(ptr->handle, &princ, mask, pass);
 
-  if(kerror)
+  if(kerror){
+    krb5_free_principal(ptr->ctx, princ.principal);
+    free_tl_data(princ.tl_data);
     rb_raise(cKadm5Exception, "kadm5_create_principal: %s", error_message(kerror));
+  }
 
   krb5_free_principal(ptr->ctx, princ.principal);
+  free_tl_data(princ.tl_data);
 
   return self;
 }
@@ -1086,6 +1092,15 @@ void add_db_args(kadm5_principal_ent_rec* entry, char** db_args){
 /**
  * Source code taken from kadmin source code at https://github.com/krb5/krb5/blob/master/src/kadmin/cli/kadmin.c
  */
+static void free_tl_data(krb5_tl_data *tl){
+  while(tl){
+    krb5_tl_data *next = tl->tl_data_next;
+    free(tl->tl_data_contents);
+    free(tl);
+    tl = next;
+  }
+}
+
 void add_tl_data(krb5_int16 *n_tl_datap, krb5_tl_data **tl_datap,
   krb5_int16 tl_type, krb5_ui_2 len, krb5_octet *contents){
   krb5_tl_data* tl_data;
