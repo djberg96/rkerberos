@@ -1046,7 +1046,7 @@ char** parse_db_args(VALUE v_db_args){
     case T_ARRAY:
       // Multiple arguments
       array_length = RARRAY_LEN(v_db_args);
-      db_args = (char **) malloc(array_length * sizeof(char *) + 1);
+      db_args = (char **) malloc((array_length + 1) * sizeof(char *));
       for(long i = 0; i < array_length; ++i){
         VALUE elem = rb_ary_entry(v_db_args, i);
         Check_Type(elem, T_STRING);
