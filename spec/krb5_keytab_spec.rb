@@ -131,6 +131,46 @@ RSpec.describe Kerberos::Krb5::Keytab do
     end
   end
 
+  describe '#get_entry' do
+    it 'finds an entry by principal name' do
+      kt = described_class.new(@keytab_name)
+      entry = kt.get_entry("testuser1@#{@realm}")
+      expect(entry).to be_a(Kerberos::Krb5::Keytab::Entry)
+      expect(entry.principal).to eq("testuser1@#{@realm}")
+      expect(entry.vno).to eq(1)
+      expect(entry.timestamp).to be_a(Time)
+      expect(entry.key).to be_a(Integer)
+    end
+
+    it 'finds an entry filtering by vno' do
+      kt = described_class.new(@keytab_name)
+      entry = kt.get_entry("testuser1@#{@realm}", 1)
+      expect(entry.principal).to eq("testuser1@#{@realm}")
+      expect(entry.vno).to eq(1)
+    end
+
+    it 'finds an entry filtering by vno and enctype' do
+      kt = described_class.new(@keytab_name)
+      # aes128-cts-hmac-sha1-96 is enctype 17
+      entry = kt.get_entry("testuser1@#{@realm}", 1, 17)
+      expect(entry.principal).to eq("testuser1@#{@realm}")
+      expect(entry.vno).to eq(1)
+      expect(entry.key).to eq(17)
+    end
+
+    it 'raises an error for a non-existent principal' do
+      kt = described_class.new(@keytab_name)
+      expect {
+        kt.get_entry("bogus@#{@realm}")
+      }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'is aliased as find' do
+      kt = described_class.new(@keytab_name)
+      expect(kt.method(:find)).to eq(kt.method(:get_entry))
+    end
+  end
+
   describe '#dup' do
     it 'creates an independent handle referring to same keytab' do
       kt1 = described_class.new(@keytab_name)

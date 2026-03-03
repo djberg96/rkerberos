@@ -246,8 +246,8 @@ static VALUE rkrb5_keytab_add_entry(int argc, VALUE* argv, VALUE self){
  * call-seq:
  *   keytab.get_entry(principal, vno = 0, encoding_type = nil)
  *
- * Searches the keytab by +principal+, +vno+ and +encoding_type+. If the
- * +vno+ is zero (the default), then the first entry that matches +principal+
+ * Searches the keytab by +principal+, +vno+ (version number) and +encoding_type+.
+ * If the +vno+ is zero (the default), then the first entry that matches +principal+
  * is returned.
  *
  * Returns a Kerberos::Krb5::KeytabEntry object if the entry is found.
@@ -274,10 +274,17 @@ static VALUE rkrb5_keytab_get_entry(int argc, VALUE* argv, VALUE self){
   kerror = krb5_parse_name(ptr->ctx, name, &principal);
 
   if(kerror)
-    rb_raise(cKrb5Exception, "krb5_unparse_name: %s", error_message(kerror));
+    rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
 
-  vno = 0;
-  enctype = 0;
+  if(NIL_P(v_vno))
+    vno = 0;
+  else
+    vno = NUM2INT(v_vno);
+
+  if(NIL_P(v_enctype))
+    enctype = 0;
+  else
+    enctype = NUM2INT(v_enctype);
 
   kerror = krb5_kt_get_entry(
     ptr->ctx,
@@ -287,6 +294,8 @@ static VALUE rkrb5_keytab_get_entry(int argc, VALUE* argv, VALUE self){
     enctype,
     &entry
   );
+
+  krb5_free_principal(ptr->ctx, principal);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_kt_get_entry: %s", error_message(kerror));
