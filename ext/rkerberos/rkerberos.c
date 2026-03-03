@@ -663,6 +663,8 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
       }
       rb_hash_aset(v_enctypes, INT2FIX(ktypes[i]), rb_str_new2(encoding));
     }
+
+    krb5_free_enctypes(ptr->ctx, ktypes);
   }
 
   return v_enctypes;
