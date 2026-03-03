@@ -75,6 +75,7 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   char* pass = NULL;
   char* keytab = NULL;
   char* service = NULL;
+  char default_keytab_name[MAX_KEYTAB_NAME_LEN];
   krb5_error_code kerror;
 
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
@@ -129,14 +130,12 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   // The docs say I can use NULL to get the default, but reality appears to be otherwise.
   if(RTEST(v_keytab)){
     if(TYPE(v_keytab) == T_TRUE){
-      char default_name[MAX_KEYTAB_NAME_LEN];
-
-      kerror = krb5_kt_default_name(ptr->ctx, default_name, MAX_KEYTAB_NAME_LEN);
+      kerror = krb5_kt_default_name(ptr->ctx, default_keytab_name, MAX_KEYTAB_NAME_LEN);
 
       if(kerror)
         rb_raise(cKrb5Exception, "krb5_kt_default_name: %s", error_message(kerror));
 
-      keytab = default_name;
+      keytab = default_keytab_name;
     }
     else{
       Check_Type(v_keytab, T_STRING);
