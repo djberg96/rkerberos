@@ -27,7 +27,7 @@ RUN bundle install && gem install rspec
 
 
 # Create a more complete krb5.conf for testing (with kadmin support)
-RUN echo "[libdefaults]\n  default_realm = EXAMPLE.COM\n  dns_lookup_realm = false\n  dns_lookup_kdc = false\n  ticket_lifetime = 24h\n  renew_lifetime = 7d\n  forwardable = true\n[realms]\n  EXAMPLE.COM = {\n    kdc = kerberos-kdc\n    admin_server = kerberos-kdc\n    default_domain = example.com\n  }\n[domain_realm]\n  .example.com = EXAMPLE.COM\n  example.com = EXAMPLE.COM\n[kadmin]\n  default_keys = des-cbc-crc:normal des-cbc-md5:normal aes256-cts:normal aes128-cts:normal rc4-hmac:normal\n  admin_server = kerberos-kdc\n" > /etc/krb5.conf
+RUN echo "[libdefaults]\n  default_realm = EXAMPLE.COM\n  dns_lookup_realm = false\n  dns_lookup_kdc = false\n  ticket_lifetime = 24h\n  renew_lifetime = 7d\n  forwardable = true\n[realms]\n  EXAMPLE.COM = {\n    kdc = kerberos-kdc\n    admin_server = kerberos-kdc\n    default_domain = example.com\n    max_life = 10h\n    max_renewable_life = 7d\n  }\n[domain_realm]\n  .example.com = EXAMPLE.COM\n  example.com = EXAMPLE.COM\n[kadmin]\n  default_keys = des-cbc-crc:normal des-cbc-md5:normal aes256-cts:normal aes128-cts:normal rc4-hmac:normal\n  admin_server = kerberos-kdc\n" > /etc/krb5.conf
 
 
 # Create a minimal KDC and admin server config, and a permissive ACL for kadmin

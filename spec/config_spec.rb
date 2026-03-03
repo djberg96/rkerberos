@@ -104,8 +104,8 @@ RSpec.describe Kerberos::Kadm5::Config do
     it 'responds to max_life' do
       expect(config).to respond_to(:max_life)
     end
-    it 'returns an Integer or nil' do
-      expect([Integer, NilClass]).to include(config.max_life.class)
+    it 'returns an Integer' do
+      expect(config.max_life).to be_a(Integer)
     end
   end
 
@@ -113,8 +113,8 @@ RSpec.describe Kerberos::Kadm5::Config do
     it 'responds to max_rlife' do
       expect(config).to respond_to(:max_rlife)
     end
-    it 'returns an Integer or nil' do
-      expect([Integer, NilClass]).to include(config.max_rlife.class)
+    it 'returns an Integer' do
+      expect(config.max_rlife).to be_a(Integer)
     end
   end
 
