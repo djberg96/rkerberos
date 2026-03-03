@@ -565,9 +565,12 @@ static VALUE rkrb5_get_default_principal(VALUE self){
   kerror = krb5_unparse_name(ptr->ctx, ptr->princ, &princ_name);
 
   if(kerror)
-    rb_raise(cKrb5Exception, "krb5_cc_default: %s", error_message(kerror));
+    rb_raise(cKrb5Exception, "krb5_unparse_name: %s", error_message(kerror));
 
-  return rb_str_new2(princ_name);
+  VALUE v_name = rb_str_new2(princ_name);
+  krb5_free_unparsed_name(ptr->ctx, princ_name);
+
+  return v_name;
 }
 
 /*
