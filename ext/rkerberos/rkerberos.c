@@ -100,7 +100,10 @@ static VALUE rkrb5_get_default_realm(VALUE self){
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_get_default_realm: %s", error_message(kerror));
 
-  return rb_str_new2(realm);
+  VALUE v_realm = rb_str_new2(realm);
+  krb5_free_default_realm(ptr->ctx, realm);
+
+  return v_realm;
 }
 
 /*
