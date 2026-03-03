@@ -349,6 +349,43 @@ static VALUE rkrb5_keytab_get_type(VALUE self){
 
 /*
  * call-seq:
+ *   keytab.dup -> new_keytab
+ *
+ * Duplicate the keytab object so that both handles may be closed
+ * independently.  Underlying data is shared by the krb5 library; the
+ * new Ruby object receives a fresh context.
+ */
+static VALUE rkrb5_keytab_dup(VALUE self){
+  RUBY_KRB5_KEYTAB *ptr, *newptr;
+  krb5_error_code kerror;
+  VALUE newobj;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  newobj = rkrb5_keytab_allocate(CLASS_OF(self));
+  TypedData_Get_Struct(newobj, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, newptr);
+
+  kerror = krb5_init_context(&newptr->ctx);
+  if(kerror){
+    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+  }
+
+  kerror = krb5_kt_dup(newptr->ctx, ptr->keytab, &newptr->keytab);
+  if(kerror){
+    krb5_free_context(newptr->ctx);
+    rb_raise(cKrb5Exception, "krb5_kt_dup: %s", error_message(kerror));
+  }
+
+  rb_iv_set(newobj, "@name", rb_iv_get(self, "@name"));
+
+  return newobj;
+}
+
+/*
+ * call-seq:
  *   Kerberos::Krb5::Keytab.new(name = nil)
  *
  * Creates and returns a new Kerberos::Krb5::Keytab object. This initializes
@@ -555,6 +592,8 @@ void Init_keytab(void){
   rb_define_method(cKrb5Keytab, "get_entry", rkrb5_keytab_get_entry, -1);
   rb_define_method(cKrb5Keytab, "keytab_name", rkrb5_keytab_get_name, 0);
   rb_define_method(cKrb5Keytab, "keytab_type", rkrb5_keytab_get_type, 0);
+  rb_define_method(cKrb5Keytab, "dup", rkrb5_keytab_dup, 0);
+  rb_define_alias(cKrb5Keytab, "clone", "dup");
 
   // TODO: Move these into Kadm5 and/or figure out how to set the vno properly.
   // rb_define_method(cKrb5Keytab, "add_entry", rkrb5_keytab_add_entry, -1);
