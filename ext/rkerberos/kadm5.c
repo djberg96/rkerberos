@@ -642,7 +642,7 @@ static VALUE rkadm5_create_policy(VALUE self, VALUE v_policy){
 
   if(RTEST(v_history_num)){
     mask |= KADM5_PW_HISTORY_NUM;
-    ent.pw_max_life = NUM2LONG(v_history_num);
+    ent.pw_history_num = NUM2LONG(v_history_num);
   }
 
   kerror = kadm5_create_policy(ptr->handle, &ent, mask);
