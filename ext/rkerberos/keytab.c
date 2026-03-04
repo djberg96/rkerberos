@@ -51,7 +51,12 @@ static VALUE rkrb5_keytab_each_body(VALUE arg){
   VALUE v_kt_entry;
 
   while((kerror = krb5_kt_next_entry(ea->ctx, ea->keytab, &entry, &ea->cursor)) == 0){
-    krb5_unparse_name(ea->ctx, entry.principal, &principal);
+    kerror = krb5_unparse_name(ea->ctx, entry.principal, &principal);
+
+    if(kerror){
+      krb5_kt_free_entry(ea->ctx, &entry);
+      rb_raise(cKrb5Exception, "krb5_unparse_name: %s", error_message(kerror));
+    }
 
     v_kt_entry = rb_class_new_instance(0, NULL, cKrb5KtEntry);
 
@@ -503,7 +508,12 @@ static VALUE rkrb5_s_keytab_foreach_body(VALUE arg){
   VALUE v_kt_entry;
 
   while((kerror = krb5_kt_next_entry(fa->ctx, fa->keytab, &entry, &fa->cursor)) == 0){
-    krb5_unparse_name(fa->ctx, entry.principal, &principal);
+    kerror = krb5_unparse_name(fa->ctx, entry.principal, &principal);
+
+    if(kerror){
+      krb5_kt_free_entry(fa->ctx, &entry);
+      rb_raise(cKrb5Exception, "krb5_unparse_name: %s", error_message(kerror));
+    }
 
     v_kt_entry = rb_class_new_instance(0, NULL, cKrb5KtEntry);
 
