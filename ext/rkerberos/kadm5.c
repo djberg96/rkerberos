@@ -9,6 +9,7 @@ VALUE cKadm5PrincipalNotFoundException;
 // Prototype
 static VALUE rkadm5_close(VALUE);
 static void free_tl_data(krb5_tl_data *);
+static void free_db_args(char**);
 char** parse_db_args(VALUE v_db_args);
 void add_db_args(kadm5_principal_ent_rec*, char**);
 void add_tl_data(krb5_int16 *, krb5_tl_data **,
@@ -25,7 +26,7 @@ static void rkadm5_typed_free(void *ptr) {
     krb5_free_principal(k->ctx, k->princ);
   if (k->ctx)
     krb5_free_context(k->ctx);
-  free(k->db_args);
+  free_db_args(k->db_args);
   free(k);
 }
 
@@ -314,7 +315,7 @@ static VALUE rkadm5_create_principal(int argc, VALUE* argv, VALUE self){
 
   db_args = parse_db_args(v_db_args);
   add_db_args(&princ, db_args);
-  free(db_args);
+  free_db_args(db_args);
 
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
@@ -398,7 +399,7 @@ static VALUE rkadm5_close(VALUE self){
   if(ptr->ctx)
     krb5_free_context(ptr->ctx);
 
-  free(ptr->db_args);
+  free_db_args(ptr->db_args);
 
   ptr->db_args = NULL;
   ptr->ctx    = NULL;
@@ -1039,7 +1040,7 @@ char** parse_db_args(VALUE v_db_args){
   switch(TYPE(v_db_args)){
     case T_STRING:
       db_args = (char **) malloc(2 * sizeof(char *));
-      db_args[0] = StringValueCStr(v_db_args);
+      db_args[0] = strdup(StringValueCStr(v_db_args));
       db_args[1] = NULL;
       break;
     case T_ARRAY:
@@ -1049,7 +1050,7 @@ char** parse_db_args(VALUE v_db_args){
       for(long i = 0; i < array_length; ++i){
         VALUE elem = rb_ary_entry(v_db_args, i);
         Check_Type(elem, T_STRING);
-        db_args[i] = StringValueCStr(elem);
+        db_args[i] = strdup(StringValueCStr(elem));
       }
       db_args[array_length] = NULL;
       break;
@@ -1060,6 +1061,16 @@ char** parse_db_args(VALUE v_db_args){
       rb_raise(rb_eTypeError, "Need Single String or Array of Strings for db_args");
   }
   return db_args;
+}
+
+/**
+ * Free a NULL-terminated array of strings returned by parse_db_args.
+ */
+static void free_db_args(char** db_args){
+  if(!db_args) return;
+  for(int i = 0; db_args[i] != NULL; i++)
+    free(db_args[i]);
+  free(db_args);
 }
 
 /**
