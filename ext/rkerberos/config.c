@@ -8,9 +8,10 @@ VALUE cKeySalt;
 static void rkadm5_config_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KADM5_CONFIG *c = (RUBY_KADM5_CONFIG *)ptr;
-  kadm5_free_config_params(c->ctx, &c->config);
-  if (c->ctx)
+  if (c->ctx) {
+    kadm5_free_config_params(c->ctx, &c->config);
     krb5_free_context(c->ctx);
+  }
   free(c);
 }
 

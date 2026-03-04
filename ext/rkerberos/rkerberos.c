@@ -181,18 +181,27 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
   krb5_free_cred_contents(ptr->ctx, &ptr->creds);
   memset(&ptr->creds, 0, sizeof(ptr->creds));
 
+  rb_scan_args(argc, argv, "04", &v_user, &v_keytab_name, &v_service, &v_ccache);
+
+  // Validate argument types before allocating opt, so type errors don't leak it.
+  if(!NIL_P(v_user))
+    Check_Type(v_user, T_STRING);
+
+  if(!NIL_P(v_keytab_name))
+    Check_Type(v_keytab_name, T_STRING);
+
+  if(!NIL_P(v_service))
+    Check_Type(v_service, T_STRING);
+
   kerror = krb5_get_init_creds_opt_alloc(ptr->ctx, &opt);
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_get_init_creds_opt_alloc: %s", error_message(kerror));
-
-  rb_scan_args(argc, argv, "04", &v_user, &v_keytab_name, &v_service, &v_ccache);
 
   // We need the service information for later.
   if(NIL_P(v_service)){
     service = NULL;
   }
   else{
-    Check_Type(v_service, T_STRING);
     service = StringValueCStr(v_service);
   }
 
@@ -212,7 +221,6 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
     }
   }
   else{
-    Check_Type(v_user, T_STRING);
     user = StringValueCStr(v_user);
 
     kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
@@ -233,7 +241,6 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
     }
   }
   else{
-    Check_Type(v_keytab_name, T_STRING);
     strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN - 1);
     keytab_name[MAX_KEYTAB_NAME_LEN - 1] = '\0';
   }
@@ -678,8 +685,10 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
     v_enctypes = rb_hash_new();
 
     for(i = 0; ktypes[i]; i++){
-      if(krb5_enctype_to_string(ktypes[i], encoding, 128)){
-        rb_raise(cKrb5Exception, "krb5_enctype_to_string: %s", error_message(kerror));
+      krb5_error_code enc_err = krb5_enctype_to_string(ktypes[i], encoding, 128);
+      if(enc_err){
+        krb5_free_enctypes(ptr->ctx, ktypes);
+        rb_raise(cKrb5Exception, "krb5_enctype_to_string: %s", error_message(enc_err));
       }
       rb_hash_aset(v_enctypes, INT2FIX(ktypes[i]), rb_str_new2(encoding));
     }
@@ -799,8 +808,8 @@ void Init_rkerberos(void){
   rb_define_alias(cKrb5, "default_realm", "get_default_realm");
   rb_define_alias(cKrb5, "default_principal", "get_default_principal");
 
-  /* 0.2.1: The version of the custom rkerberos library */
-  rb_define_const(cKrb5, "VERSION", rb_str_new2("0.2.1"));
+  /* 0.2.2: The version of the custom rkerberos library */
+  rb_define_const(cKrb5, "VERSION", rb_str_new2("0.2.2"));
 
   // Encoding type constants
 

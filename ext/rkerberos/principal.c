@@ -49,22 +49,30 @@ static VALUE rkrb5_princ_allocate(VALUE klass){
 static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
   RUBY_KRB5_PRINC* ptr;
   krb5_error_code kerror;
+
   TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
+
   kerror = krb5_init_context(&ptr->ctx);
+
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_init_context failed: %s", error_message(kerror));
+
   if(NIL_P(v_name)){
     rb_iv_set(self, "@principal", Qnil);
   }
   else{
     char* name;
     Check_Type(v_name, T_STRING);
+
     name = StringValueCStr(v_name);
     kerror = krb5_parse_name(ptr->ctx, name, &ptr->principal);
+
     if(kerror)
       rb_raise(cKrb5Exception, "krb5_parse_name failed: %s", error_message(kerror));
+
     rb_iv_set(self, "@principal", v_name);
   }
+
   rb_iv_set(self, "@attributes", Qnil);
   rb_iv_set(self, "@aux_attributes", Qnil);
   rb_iv_set(self, "@expire_time", Qnil);
@@ -79,8 +87,10 @@ static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
   rb_iv_set(self, "@password_expiration", Qnil);
   rb_iv_set(self, "@policy", Qnil);
   rb_iv_set(self, "@kvno", Qnil);
+
   if(rb_block_given_p())
     rb_yield(self);
+
   return self;
 }
 
@@ -92,7 +102,12 @@ static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
  */
 static VALUE rkrb5_princ_get_realm(VALUE self){
   RUBY_KRB5_PRINC* ptr;
+
   TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
+
+  if(!ptr->principal)
+    rb_raise(cKrb5Exception, "no principal has been established");
+
   return rb_str_new2(krb5_princ_realm(ptr->ctx, ptr->principal)->data);
 }
 
@@ -104,9 +119,16 @@ static VALUE rkrb5_princ_get_realm(VALUE self){
  */
 static VALUE rkrb5_princ_set_realm(VALUE self, VALUE v_realm){
   RUBY_KRB5_PRINC* ptr;
+
   TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
+
+  if(!ptr->principal)
+    rb_raise(cKrb5Exception, "no principal has been established");
+
   Check_Type(v_realm, T_STRING);
+
   krb5_set_principal_realm(ptr->ctx, ptr->principal, StringValueCStr(v_realm));
+
   return v_realm;
 }
 
@@ -120,10 +142,16 @@ static VALUE rkrb5_princ_equal(VALUE self, VALUE v_other){
   RUBY_KRB5_PRINC* ptr1;
   RUBY_KRB5_PRINC* ptr2;
   VALUE v_bool = Qfalse;
+
   TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr1);
   TypedData_Get_Struct(v_other, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr2);
+
+  if(!ptr1->principal || !ptr2->principal)
+    return Qfalse;
+
   if(krb5_principal_compare(ptr1->ctx, ptr1->principal, ptr2->principal))
     v_bool = Qtrue;
+
   return v_bool;
 }
 

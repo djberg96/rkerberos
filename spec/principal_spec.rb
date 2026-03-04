@@ -12,6 +12,24 @@ RSpec.describe Kerberos::Krb5::Principal do
       expect { described_class.new(1) }.to raise_error(TypeError)
       expect { described_class.new(true) }.to raise_error(TypeError)
     end
+
+    it 'accepts an explicit nil argument' do
+      expect{ described_class.new(nil) }.not_to raise_error
+    end
+
+    it 'works as expected with a nil argument to the constructor' do
+      expect(described_class.new(nil).principal).to be_nil
+    end
+  end
+
+  describe '#realm' do
+    it 'returns the expected value' do
+      expect(subject.realm).to eq('EXAMPLE.COM')
+    end
+
+    it 'raises an error if the constructor argument was nil' do
+      expect{ described_class.new(nil).realm }.to raise_error(Kerberos::Krb5::Exception, /no principal/)
+    end
   end
 
   describe '#name' do

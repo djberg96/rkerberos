@@ -267,6 +267,10 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
       if(ptr->ctx)
         krb5_free_context(ptr->ctx);
 
+      ptr->ccache = NULL;
+      ptr->ctx = NULL;
+      ptr->principal = NULL;
+
       rb_raise(cKrb5Exception, "krb5_cc_destroy: %s", error_message(kerror));
     }
   }

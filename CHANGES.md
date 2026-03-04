@@ -1,3 +1,16 @@
+# 0.2.2 - 3-Mar-2026
+* Added custom .dup methods for CredentialsCache and Keytab.
+* Added the keytab_name and keytab_type methods to Keytab.
+* Added the cache_name, cache_type and principal methods to CredentialsCache.
+* The Keytab#get_entry method now properly honors the vno and encoding type arguments.
+* Fixed the max_life and max_rlife attributes in Config.
+* Fixed the get_privileges method in Kadm5.
+* Fixed the change_password method in Kadm5 and added specs for it. Previously it would
+  generally always return true because it wasn't considering KDC failures, only raw
+  function failures.
+* Heaps of memory leak fixes. Get it? Heaps? Right, I'll see myself out.
+* Converted the CHANGES and MANIFEST files to markdown.
+
 # 0.2.1 - 1-Mar-2026
 * Added the verify_init_creds and an authenticate! methods.
 * The Context constructor now accepts optional :secure and/or :profile arguments
