@@ -447,8 +447,10 @@ static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_pr
     char* mod_name;
     kerror = krb5_unparse_name(ptr->ctx, ent->mod_name, &mod_name);
 
-    if(kerror)
+    if(kerror){
+      kadm5_free_principal_ent(ptr->handle, ent);
       rb_raise(cKadm5Exception, "krb5_unparse_name: %s", error_message(kerror));
+    }
 
     rb_iv_set(v_principal, "@mod_name", rb_str_new2(mod_name));
     krb5_free_unparsed_name(ptr->ctx, mod_name);
@@ -459,6 +461,8 @@ static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_pr
 
   if(ent->policy)
     rb_iv_set(v_principal, "@policy", rb_str_new2(ent->policy));
+
+  kadm5_free_principal_ent(ptr->handle, ent);
 
   return v_principal;
 }
@@ -519,7 +523,6 @@ static VALUE rkadm5_find_principal(VALUE self, VALUE v_user){
   }
   else{
     v_principal = create_principal_from_entry(v_user, ptr, &ent);
-    kadm5_free_principal_ent(ptr->handle, &ent);
   }
 
   return v_principal;
@@ -580,8 +583,6 @@ static VALUE rkadm5_get_principal(VALUE self, VALUE v_user){
   }
 
   v_principal = create_principal_from_entry(v_user, ptr, &ent);
-
-  kadm5_free_principal_ent(ptr->handle, &ent);
 
   return v_principal;
 }
