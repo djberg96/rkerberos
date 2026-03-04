@@ -800,7 +800,7 @@ void Init_rkerberos(void){
   rb_define_alias(cKrb5, "default_principal", "get_default_principal");
 
   /* 0.2.1: The version of the custom rkerberos library */
-  rb_define_const(cKrb5, "VERSION", rb_str_new2("0.2.1"));
+  rb_define_const(cKrb5, "VERSION", rb_str_new2("0.2.2"));
 
   // Encoding type constants
 
