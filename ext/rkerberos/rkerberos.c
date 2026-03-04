@@ -181,18 +181,27 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
   krb5_free_cred_contents(ptr->ctx, &ptr->creds);
   memset(&ptr->creds, 0, sizeof(ptr->creds));
 
+  rb_scan_args(argc, argv, "04", &v_user, &v_keytab_name, &v_service, &v_ccache);
+
+  // Validate argument types before allocating opt, so type errors don't leak it.
+  if(!NIL_P(v_user))
+    Check_Type(v_user, T_STRING);
+
+  if(!NIL_P(v_keytab_name))
+    Check_Type(v_keytab_name, T_STRING);
+
+  if(!NIL_P(v_service))
+    Check_Type(v_service, T_STRING);
+
   kerror = krb5_get_init_creds_opt_alloc(ptr->ctx, &opt);
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_get_init_creds_opt_alloc: %s", error_message(kerror));
-
-  rb_scan_args(argc, argv, "04", &v_user, &v_keytab_name, &v_service, &v_ccache);
 
   // We need the service information for later.
   if(NIL_P(v_service)){
     service = NULL;
   }
   else{
-    Check_Type(v_service, T_STRING);
     service = StringValueCStr(v_service);
   }
 
@@ -212,7 +221,6 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
     }
   }
   else{
-    Check_Type(v_user, T_STRING);
     user = StringValueCStr(v_user);
 
     kerror = krb5_parse_name(ptr->ctx, user, &ptr->princ);
@@ -233,7 +241,6 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
     }
   }
   else{
-    Check_Type(v_keytab_name, T_STRING);
     strncpy(keytab_name, StringValueCStr(v_keytab_name), MAX_KEYTAB_NAME_LEN - 1);
     keytab_name[MAX_KEYTAB_NAME_LEN - 1] = '\0';
   }
