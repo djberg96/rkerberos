@@ -63,7 +63,8 @@ static VALUE rkrb5_kt_entry_inspect(VALUE self){
 
   rb_str_buf_cat2(v_str, "key=");
   rb_str_buf_append(v_str, rb_inspect(rb_iv_get(self, "@key")));
-  rb_str_buf_cat2(v_str, " ");
+
+  rb_str_buf_cat2(v_str, ">");
 
   return v_str;
 }
