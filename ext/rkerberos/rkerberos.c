@@ -678,8 +678,10 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
     v_enctypes = rb_hash_new();
 
     for(i = 0; ktypes[i]; i++){
-      if(krb5_enctype_to_string(ktypes[i], encoding, 128)){
-        rb_raise(cKrb5Exception, "krb5_enctype_to_string: %s", error_message(kerror));
+      krb5_error_code enc_err = krb5_enctype_to_string(ktypes[i], encoding, 128);
+      if(enc_err){
+        krb5_free_enctypes(ptr->ctx, ktypes);
+        rb_raise(cKrb5Exception, "krb5_enctype_to_string: %s", error_message(enc_err));
       }
       rb_hash_aset(v_enctypes, INT2FIX(ktypes[i]), rb_str_new2(encoding));
     }
