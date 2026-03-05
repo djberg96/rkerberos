@@ -26,8 +26,6 @@ end
 
 if pkg_config('kdb5') || have_library('kdb5')
   have_header('kdb.h')
-else
-  raise 'kdb5 library not found'
 end
 
 create_makefile('rkerberos')
