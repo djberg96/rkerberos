@@ -14,8 +14,20 @@ else
   else
     dir_config('rkerberos', '/usr/local')
   end
+
+  if File::ALT_SEPARATOR
+    kfw_dir = ENV['KRB5_DIR'] || 'C:/Program Files/MIT/Kerberos'
+    kfw_inc = ENV['KRB5_INCLUDE'] || File.join(kfw_dir, 'include')
+    kfw_lib = ENV['KRB5_LIB'] || File.join(kfw_dir, 'lib')
+    $INCFLAGS << " -I\"#{kfw_inc}\""
+    $LDFLAGS << " -L\"#{kfw_lib}\""
+  end
+
   have_header('krb5.h')
-  have_library('krb5')
+  have_header('profile.h')
+
+  have_library('krb5') || have_library('krb5_64')
+  have_library('comerr') || have_library('comerr64')
 end
 
 pkg_config('com_err') || have_library('com_err')
@@ -26,8 +38,6 @@ end
 
 if pkg_config('kdb5') || have_library('kdb5')
   have_header('kdb.h')
-else
-  raise 'kdb5 library not found'
 end
 
 create_makefile('rkerberos')

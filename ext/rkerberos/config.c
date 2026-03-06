@@ -1,3 +1,4 @@
+#ifdef HAVE_KADM5_ADMIN_H
 #include <rkerberos.h>
 
 VALUE cKadm5Config;
@@ -334,3 +335,4 @@ void Init_config(void){
   rb_define_attr(cKeySalt, "enctype", 1, 0);
   rb_define_attr(cKeySalt, "salttype", 1, 0);
 }
+#endif
