@@ -4,9 +4,11 @@
 require 'rkerberos'
 require 'socket'
 
-RSpec.describe Kerberos::Kadm5 do
+RSpec.describe 'Kerberos::Kadm5', :kadm do
+  subject(:klass){ Kerberos::Kadm5 }
+  let(:server){ Kerberos::Kadm5::Config.new.admin_server }
+
   before(:all) do
-    @server = Kerberos::Kadm5::Config.new.admin_server
     @host = Socket.gethostname
     @user = ENV['KRB5_ADMIN_PRINCIPAL']
     @pass = ENV['KRB5_ADMIN_PASSWORD']

@@ -3,7 +3,7 @@
 
 require 'rkerberos'
 
-RSpec.describe Kerberos::Kadm5::Config do
+RSpec.describe 'Kerberos::Kadm5::Config', :kadm5 do
   subject(:config) { described_class.new }
 
   it 'is frozen' do
