@@ -94,7 +94,7 @@ static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
    * is used when the :secure option is truthy.
    */
   if (!NIL_P(v_profile)){
-#ifndef HAVE_FUNC_PROFILE_INIT_PATH
+#ifndef HAVE_PROFILE_INIT_PATH
     rb_raise(rb_eArgError, "profile option not supported on this platform");
 #else
     Check_Type(v_profile, T_STRING);
