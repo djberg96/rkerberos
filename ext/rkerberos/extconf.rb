@@ -24,7 +24,6 @@ else
   end
 
   have_header('krb5.h')
-  have_header('profile.h')
 
   have_library('krb5') || have_library('krb5_64')
   have_library('comerr') || have_library('comerr64')
@@ -38,6 +37,10 @@ end
 
 if pkg_config('kdb5') || have_library('kdb5')
   have_header('kdb.h')
+end
+
+if have_header('profile.h')
+  have_func('profile_init_path')
 end
 
 create_makefile('rkerberos')

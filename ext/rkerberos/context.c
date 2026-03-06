@@ -61,6 +61,8 @@ static VALUE rkrb5_context_close(VALUE self){
  *
  *   :secure  => true|false           # Use config files only, ignore env variables
  *   :profile => '/path/to/krb5.conf' # Use the specified profile file
+ *
+ * Note that the profile option may not be supported on your platform.
  */
 static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
   RUBY_KRB5_CONTEXT* ptr;
@@ -92,6 +94,9 @@ static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
    * is used when the :secure option is truthy.
    */
   if (!NIL_P(v_profile)){
+#ifndef HAVE_PROFILE_INIT_PATH
+    rb_raise(rb_eArgError, "profile option not supported on this platform");
+#else
     Check_Type(v_profile, T_STRING);
 
     const char *profile_path = StringValueCStr(v_profile);
@@ -110,6 +115,7 @@ static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
       rb_raise(cKrb5Exception, "krb5_init_context_profile: %s", error_message(kerror));
 
     return self;
+#endif
   }
 
   // No profile given, choose secure or normal init.
