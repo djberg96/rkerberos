@@ -24,7 +24,10 @@ else
   end
 
   have_header('krb5.h')
-  have_header('profile.h')
+
+  if have_header('profile.h')
+    have_func('profile.h', 'profile_init_path')
+  end
 
   have_library('krb5') || have_library('krb5_64')
   have_library('comerr') || have_library('comerr64')
