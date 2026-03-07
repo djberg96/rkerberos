@@ -1,10 +1,10 @@
 # spec/kadm5_spec.rb
 # RSpec tests for Kerberos::Kadm5
 
-require 'rkerberos'
+require 'spec_helper'
 require 'socket'
 
-RSpec.describe Kerberos::Kadm5 do
+RSpec.describe Kerberos::Kadm5, :kadm5 do
   before(:all) do
     @server = Kerberos::Kadm5::Config.new.admin_server
     @host = Socket.gethostname
