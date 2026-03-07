@@ -3,8 +3,9 @@
 
 require 'spec_helper'
 
-RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
-  subject(:config) { described_class.new }
+RSpec.describe 'Kerberos::Kadm5::Config', :kadm5 do
+  subject(:klass){ Kerberos::Kadm5::Config }
+  let(:config) { klass.new }
 
   it 'is frozen' do
     expect(config).to be_frozen
@@ -14,6 +15,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to realm' do
       expect(config).to respond_to(:realm)
     end
+
     it 'returns a String' do
       expect(config.realm).to be_a(String)
     end
@@ -23,6 +25,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to kadmind_port' do
       expect(config).to respond_to(:kadmind_port)
     end
+
     it 'returns an Integer' do
       expect(config.kadmind_port).to be_a(Integer)
     end
@@ -32,6 +35,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to kpasswd_port' do
       expect(config).to respond_to(:kpasswd_port)
     end
+
     it 'returns an Integer' do
       expect(config.kpasswd_port).to be_a(Integer)
     end
@@ -41,6 +45,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to admin_server' do
       expect(config).to respond_to(:admin_server)
     end
+
     it 'returns a String' do
       expect(config.admin_server).to be_a(String)
     end
@@ -50,6 +55,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to acl_file' do
       expect(config).to respond_to(:acl_file)
     end
+
     it 'returns a String' do
       expect(config.acl_file).to be_a(String)
     end
@@ -59,6 +65,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to dict_file' do
       expect(config).to respond_to(:dict_file)
     end
+
     it 'returns a String or nil' do
       expect([String, NilClass]).to include(config.dict_file.class)
     end
@@ -68,6 +75,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to stash_file' do
       expect(config).to respond_to(:stash_file)
     end
+
     it 'returns a String or nil' do
       expect([String, NilClass]).to include(config.stash_file.class)
     end
@@ -77,6 +85,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to mkey_name' do
       expect(config).to respond_to(:mkey_name)
     end
+
     it 'returns a String or nil' do
       expect([String, NilClass]).to include(config.mkey_name.class)
     end
@@ -86,6 +95,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to mkey_from_kbd' do
       expect(config).to respond_to(:mkey_from_kbd)
     end
+
     it 'returns an Integer or nil' do
       expect([Integer, NilClass]).to include(config.mkey_from_kbd.class)
     end
@@ -95,6 +105,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to enctype' do
       expect(config).to respond_to(:enctype)
     end
+
     it 'returns an Integer' do
       expect(config.enctype).to be_a(Integer)
     end
@@ -104,6 +115,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to max_life' do
       expect(config).to respond_to(:max_life)
     end
+
     it 'returns an Integer' do
       expect(config.max_life).to be_a(Integer)
     end
@@ -113,6 +125,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to max_rlife' do
       expect(config).to respond_to(:max_rlife)
     end
+
     it 'returns an Integer' do
       expect(config.max_rlife).to be_a(Integer)
     end
@@ -122,6 +135,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to expiration' do
       expect(config).to respond_to(:expiration)
     end
+
     it 'returns a Time or nil' do
       expect([Time, NilClass]).to include(config.expiration.class)
     end
@@ -131,6 +145,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to kvno' do
       expect(config).to respond_to(:kvno)
     end
+
     it 'returns an Integer or nil' do
       expect([Integer, NilClass]).to include(config.kvno.class)
     end
@@ -140,6 +155,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to iprop_enabled' do
       expect(config).to respond_to(:iprop_enabled)
     end
+
     it 'returns a boolean' do
       expect(!!config.iprop_enabled == config.iprop_enabled).to be true
     end
@@ -149,6 +165,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to iprop_logfile' do
       expect(config).to respond_to(:iprop_logfile)
     end
+
     it 'returns a String' do
       expect(config.iprop_logfile).to be_a(String)
     end
@@ -158,6 +175,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to iprop_poll_time' do
       expect(config).to respond_to(:iprop_poll_time)
     end
+
     it 'returns an Integer' do
       expect(config.iprop_poll_time).to be_a(Integer)
     end
@@ -167,6 +185,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to iprop_port' do
       expect(config).to respond_to(:iprop_port)
     end
+
     it 'returns an Integer or nil' do
       expect([Integer, NilClass]).to include(config.iprop_port.class)
     end
@@ -176,6 +195,7 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to num_keysalts' do
       expect(config).to respond_to(:num_keysalts)
     end
+
     it 'returns an Integer' do
       expect(config.num_keysalts).to be_a(Integer)
     end
@@ -185,9 +205,11 @@ RSpec.describe Kerberos::Kadm5::Config, :kadm5 do
     it 'responds to keysalts' do
       expect(config).to respond_to(:keysalts)
     end
+
     it 'returns an Array' do
       expect(config.keysalts).to be_a(Array)
     end
+
     it 'contains KeySalt objects if not empty' do
       unless config.keysalts.empty?
         expect(config.keysalts.first).to be_a(Kerberos::Kadm5::KeySalt)
