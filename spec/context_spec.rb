@@ -25,12 +25,12 @@ RSpec.describe Kerberos::Krb5::Context do
       expect { described_class.new(secure: true) }.not_to raise_error
     end
 
-    it 'accepts a profile path via :profile' do
+    it 'accepts a profile path via :profile', :unix do
       expect(File).to exist(profile_path)
       expect { described_class.new(profile: profile_path) }.not_to raise_error
     end
 
-    it 'validates profile argument type' do
+    it 'validates profile argument type', :unix do
       expect { described_class.new(profile: 123) }.to raise_error(TypeError)
     end
 
@@ -44,7 +44,7 @@ RSpec.describe Kerberos::Krb5::Context do
       end
     end
 
-    it 'accepts secure: true together with profile' do
+    it 'accepts secure: true together with profile', :unix do
       expect(File).to exist(profile_path)
       ctx = nil
       expect { ctx = described_class.new(secure: true, profile: profile_path) }.not_to raise_error
