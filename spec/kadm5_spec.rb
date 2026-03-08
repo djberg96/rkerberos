@@ -4,9 +4,11 @@
 require 'spec_helper'
 require 'socket'
 
-RSpec.describe Kerberos::Kadm5, :kadm5 do
+RSpec.describe 'Kerberos::Kadm5', :kadm5 do
+  let(:server){ Kerberos::Kadm5::Config.new.admin_server }
+  subject(:klass){ Kerberos::Kadm5 }
+
   before(:all) do
-    @server = Kerberos::Kadm5::Config.new.admin_server
     @host = Socket.gethostname
     @user = ENV['KRB5_ADMIN_PRINCIPAL']
     @pass = ENV['KRB5_ADMIN_PASSWORD']
@@ -23,44 +25,44 @@ RSpec.describe Kerberos::Kadm5, :kadm5 do
 
   describe 'constructor' do
     it 'responds to .new' do
-      expect(described_class).to respond_to(:new)
+      expect(subject).to respond_to(:new)
     end
     it 'works with valid user and password' do
-      expect { described_class.new(principal: user, password: pass) }.not_to raise_error
+      expect { subject.new(principal: user, password: pass) }.not_to raise_error
     end
     it 'works with valid service' do
       expect {
-        described_class.new(principal: user, password: pass, service: 'kadmin/admin')
+        subject.new(principal: user, password: pass, service: 'kadmin/admin')
       }.not_to raise_error
     end
     it 'only accepts a hash argument' do
-      expect { described_class.new(user) }.to raise_error(TypeError)
-      expect { described_class.new(1) }.to raise_error(TypeError)
+      expect { subject.new(user) }.to raise_error(TypeError)
+      expect { subject.new(1) }.to raise_error(TypeError)
     end
     it 'accepts a block and yields itself' do
-      expect { described_class.new(principal: user, password: pass) {} }.not_to raise_error
-      described_class.new(principal: user, password: pass) { |kadm5| expect(kadm5).to be_a(described_class) }
+      expect { subject.new(principal: user, password: pass) {} }.not_to raise_error
+      subject.new(principal: user, password: pass) { |kadm5| expect(kadm5).to be_a(subject) }
     end
     it 'requires principal to be specified' do
-      expect { described_class.new({}) }.to raise_error(ArgumentError)
+      expect { subject.new({}) }.to raise_error(ArgumentError)
     end
     it 'requires principal to be a string' do
-      expect { described_class.new(principal: 1) }.to raise_error(TypeError)
+      expect { subject.new(principal: 1) }.to raise_error(TypeError)
     end
     it 'requires password to be a string' do
-      expect { described_class.new(principal: user, password: 1) }.to raise_error(TypeError)
+      expect { subject.new(principal: user, password: 1) }.to raise_error(TypeError)
     end
     it 'requires keytab to be a string or boolean' do
-      expect { described_class.new(principal: user, keytab: 1) }.to raise_error(TypeError)
+      expect { subject.new(principal: user, keytab: 1) }.to raise_error(TypeError)
     end
     it 'requires service to be a string' do
-      expect { described_class.new(principal: user, password: pass, service: 1) }.to raise_error(TypeError)
+      expect { subject.new(principal: user, password: pass, service: 1) }.to raise_error(TypeError)
     end
   end
 
   describe '#get_privileges' do
     before(:each) do
-      @kadm5 = described_class.new(principal: user, password: pass)
+      @kadm5 = subject.new(principal: user, password: pass)
     end
 
     after(:each) do
