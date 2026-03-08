@@ -1,7 +1,7 @@
 # spec/context_spec.rb
 # RSpec tests for Kerberos::Krb5::Context
 
-require 'rkerberos'
+require 'spec_helper'
 
 RSpec.describe Kerberos::Krb5::Context do
   subject(:context) { described_class.new }

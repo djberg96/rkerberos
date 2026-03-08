@@ -1,7 +1,7 @@
 # spec/credentials_cache_spec.rb
 # RSpec tests for Kerberos::Krb5::CredentialsCache
 
-require 'rkerberos'
+require 'spec_helper'
 require 'etc'
 require 'open3'
 require 'tmpdir'
