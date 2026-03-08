@@ -22,7 +22,7 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
   end
 
   after(:each) do
-    Open3.popen3('kdestroy') { sleep 0.1 }
+    Open3.popen3('kdestroy -q') { sleep 0.1 }
   end
 
   describe 'constructor' do
