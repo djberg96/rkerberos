@@ -89,7 +89,7 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
 
       # cache_name returns the residual portion of the cache name; default_name
       # may include the type prefix (e.g. "FILE:"). ensure the suffix matches.
-      expect(c.cache_name).to eq(c.default_name.split(':').last)
+      expect(c.cache_name).to eq(c.default_name.split(/\w{2,}:/).last)
     end
   end
 
