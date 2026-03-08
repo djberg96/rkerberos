@@ -11,13 +11,17 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
   let(:ccache) { described_class.new }
 
   def cache_found?
-    found = true
-    Open3.popen3('klist') { |_, _, stderr| found = false unless stderr.gets.nil? }
-    found
+    if File::ALT_SEPARATOR
+      File.exist?(cfile)
+    else
+      found = true
+      Open3.popen3('klist') { |_, _, stderr| found = false unless stderr.gets.nil? }
+      found
+    end
   end
 
   after(:each) do
-    Open3.popen3('kdestroy -q') { sleep 0.1 }
+    Open3.popen3('kdestroy -q') { sleep 0.1 } if cache_found?
   end
 
   describe 'constructor' do
