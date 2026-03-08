@@ -24,23 +24,28 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
     it 'can be called with no arguments' do
       expect { described_class.new }.not_to raise_error
     end
+
     it 'does not create a cache with no arguments' do
       described_class.new
       expect(File.exist?(cfile)).to be false
       expect(cache_found?).to be false
     end
+
     it 'creates a cache with a principal' do
       expect { described_class.new(princ) }.not_to raise_error
       expect(File.exist?(cfile)).to be true
       expect(cache_found?).to be true
     end
+
     it 'accepts an explicit cache name' do
       expect { described_class.new(princ, cfile) }.not_to raise_error
       expect { described_class.new(nil, cfile) }.not_to raise_error
     end
+
     it 'raises error for non-string argument' do
       expect { described_class.new(true) }.to raise_error(TypeError)
     end
+
     it 'accepts only up to two arguments' do
       expect { described_class.new(princ, cfile, cfile) }.to raise_error(ArgumentError)
     end
@@ -50,15 +55,18 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
     it 'responds to close' do
       expect(described_class.new(princ)).to respond_to(:close)
     end
+
     it 'does not delete credentials cache' do
       c = described_class.new(princ)
       expect { c.close }.not_to raise_error
       expect(cache_found?).to be true
     end
+
     it 'can be called multiple times without error' do
       c = described_class.new(princ)
       expect { 3.times { c.close } }.not_to raise_error
     end
+
     it 'raises error when calling method on closed object' do
       c = described_class.new(princ)
       c.close
@@ -72,6 +80,7 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
       expect(c).to respond_to(:default_name)
       expect { c.default_name }.not_to raise_error
     end
+
     it 'returns a string' do
       c = described_class.new(princ)
       expect(c.default_name).to be_a(String)
@@ -107,6 +116,7 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
       expect(c).to respond_to(:primary_principal)
       expect { c.primary_principal }.not_to raise_error
     end
+
     it 'returns expected results' do
       c = described_class.new(princ)
       expect(c.primary_principal).to be_a(String)
@@ -120,25 +130,30 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
       c = described_class.new(princ)
       expect(c).to respond_to(:destroy)
     end
+
     it 'deletes credentials cache' do
       c = described_class.new(princ)
       expect { c.destroy }.not_to raise_error
       expect(cache_found?).to be false
     end
+
     it 'delete is an alias for destroy' do
       c = described_class.new(princ)
       expect(c).to respond_to(:delete)
       expect(c.method(:delete)).to eq(c.method(:destroy))
     end
+
     it 'returns false if no credentials cache' do
       c = described_class.new
       expect(c.destroy).to be false
     end
+
     it 'raises error when calling method on destroyed object' do
       c = described_class.new(princ)
       c.destroy
       expect { c.default_name }.to raise_error(Kerberos::Krb5::Exception)
     end
+
     it 'does not accept arguments' do
       c = described_class.new(princ)
       expect { c.destroy(true) }.to raise_error(ArgumentError)
