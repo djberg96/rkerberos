@@ -1,3 +1,10 @@
+# 0.2.3 - 8-Mar-2026
+* All Kadm5 related classes are skipped if not found.
+* Several updates to the spec helper that mainly revolved around supporting
+  MS Windows and/or skipping specs when Kadm5 classes aren't found.
+* More potential memory issues addressed, mainly stuff that only happened
+  on an error path.
+
 # 0.2.2 - 3-Mar-2026
 * Added custom .dup methods for CredentialsCache and Keytab.
 * Added the keytab_name and keytab_type methods to Keytab.
