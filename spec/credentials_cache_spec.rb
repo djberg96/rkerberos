@@ -2,17 +2,12 @@
 # RSpec tests for Kerberos::Krb5::CredentialsCache
 
 require 'spec_helper'
-require 'etc'
 require 'open3'
-require 'tmpdir'
 
 RSpec.describe Kerberos::Krb5::CredentialsCache do
-  let(:login) do
-    Etc.getlogin || ENV['USER'] || (Etc.getpwuid(Process.uid).name rescue nil)
-  end
   let(:realm) { Kerberos::Krb5.new.default_realm }
-  let(:princ) { "#{login}@#{realm}" }
-  let(:cfile) { File.join(Dir.tmpdir, "krb5cc_#{Etc.getpwnam(login).uid}") }
+  let(:princ) { RSpec.configuration.login + '@' + realm }
+  let(:cfile) { RSpec.configuration.krb5_cc_name }
   let(:ccache) { described_class.new }
 
   def cache_found?

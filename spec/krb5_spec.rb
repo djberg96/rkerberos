@@ -1,7 +1,7 @@
 # spec/krb5_spec.rb
 # RSpec tests for Kerberos::Krb5
 
-require 'rkerberos'
+require 'spec_helper'
 require 'open3'
 
 unless File::ALT_SEPARATOR
