@@ -8,11 +8,10 @@ require 'expect'
 
 RSpec.describe Kerberos::Krb5 do
   before(:all) do
+    krb5_conf = RSpec.configuration.krb5_conf
     @cache_found = true
     Open3.popen3('klist') { |_, _, stderr| @cache_found = false unless stderr.gets.nil? }
-    @krb5_conf = ENV['KRB5_CONFIG'] || '/etc/krb5.conf'
-    @realm = IO.read(@krb5_conf).split("\n").grep(/default_realm/).first.split('=').last.lstrip.chomp
-
+    @realm = IO.read(krb5_conf).split("\n").grep(/default_realm/).first.split('=').last.lstrip.chomp
   end
 
   subject(:krb5) { described_class.new }

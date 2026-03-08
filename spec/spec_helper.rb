@@ -13,6 +13,9 @@ RSpec.configure do |config|
     krb5_conf ||= '/etc/krb5.conf'
   end
 
+  config.add_setting :krb5_conf
+  config.krb5_conf = krb5_conf
+
   unless File.exist?(krb5_conf)
     config.filter_run_excluding :krb5_config => true
   end
