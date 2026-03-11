@@ -81,6 +81,7 @@ typedef struct {
   krb5_principal princ;
   void* handle;
   char** db_args;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KADM5;
 
 // Kerberos::Krb5::Keytab::Entry

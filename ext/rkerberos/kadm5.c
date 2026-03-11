@@ -17,6 +17,13 @@ void add_tl_data(krb5_int16 *, krb5_tl_data **,
 
 
 // TypedData functions for RUBY_KADM5
+static void rkadm5_typed_mark(void *ptr) {
+  if (!ptr) return;
+  RUBY_KADM5 *k = (RUBY_KADM5 *)ptr;
+  if (k->rb_context != Qnil)
+    rb_gc_mark(k->rb_context);
+}
+
 static void rkadm5_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KADM5 *k = (RUBY_KADM5 *)ptr;
@@ -24,7 +31,7 @@ static void rkadm5_typed_free(void *ptr) {
     kadm5_destroy(k->handle);
   if (k->princ)
     krb5_free_principal(k->ctx, k->princ);
-  if (k->ctx)
+  if (k->ctx && k->rb_context == Qnil)
     krb5_free_context(k->ctx);
   free_db_args(k->db_args);
   free(k);
@@ -36,7 +43,7 @@ static size_t rkadm5_typed_size(const void *ptr) {
 
 static const rb_data_type_t rkadm5_data_type = {
   "RUBY_KADM5",
-  {NULL, rkadm5_typed_free, rkadm5_typed_size,},
+  {rkadm5_typed_mark, rkadm5_typed_free, rkadm5_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -44,6 +51,7 @@ static const rb_data_type_t rkadm5_data_type = {
 static VALUE rkadm5_allocate(VALUE klass){
   RUBY_KADM5* ptr = ALLOC(RUBY_KADM5);
   memset(ptr, 0, sizeof(RUBY_KADM5));
+  ptr->rb_context = Qnil;
   return TypedData_Wrap_Struct(klass, &rkadm5_data_type, ptr);
 }
 
@@ -71,7 +79,7 @@ static VALUE rkadm5_allocate(VALUE klass){
  */
 static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   RUBY_KADM5* ptr;
-  VALUE v_principal, v_password, v_keytab, v_service, v_db_args;
+  VALUE v_principal, v_password, v_keytab, v_service, v_db_args, v_context;
   char* user;
   char* pass = NULL;
   char* keytab = NULL;
@@ -121,12 +129,33 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   if (NIL_P(v_db_args)) v_db_args = rb_hash_aref2(v_opts, ID2SYM(rb_intern("db_args")));
   ptr->db_args = parse_db_args(v_db_args);
 
-  // Normally I would wait to initialize the context, but we might need it
-  // to get the default keytab file name.
-  kerror = krb5_init_context(&ptr->ctx);
+  // Check for an optional context keyword argument
+  v_context = rb_hash_aref2(v_opts, rb_str_new_cstr("context"));
+  if (NIL_P(v_context)) v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
 
-  if(kerror)
-    rb_raise(cKadm5Exception, "krb5_init_context: %s", error_message(kerror));
+  // Initialize or borrow the context
+  if(RTEST(v_context)){
+    RUBY_KRB5_CONTEXT* ctx_ptr;
+
+    if(!rb_obj_is_kind_of(v_context, cKrb5Context))
+      rb_raise(rb_eTypeError, "context must be a Kerberos::Krb5::Context object");
+
+    TypedData_Get_Struct(v_context, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ctx_ptr);
+
+    if(!ctx_ptr->ctx)
+      rb_raise(cKrb5Exception, "context is closed");
+
+    ptr->ctx = ctx_ptr->ctx;
+    ptr->rb_context = v_context;
+  }
+  else{
+    kerror = krb5_init_context(&ptr->ctx);
+
+    if(kerror)
+      rb_raise(cKadm5Exception, "krb5_init_context: %s", error_message(kerror));
+
+    ptr->rb_context = Qnil;
+  }
 
   // The docs say I can use NULL to get the default, but reality appears to be otherwise.
   if(RTEST(v_keytab)){
@@ -396,7 +425,7 @@ static VALUE rkadm5_close(VALUE self){
   if(ptr->princ)
     krb5_free_principal(ptr->ctx, ptr->princ);
 
-  if(ptr->ctx)
+  if(ptr->ctx && ptr->rb_context == Qnil)
     krb5_free_context(ptr->ctx);
 
   free_db_args(ptr->db_args);
@@ -405,6 +434,7 @@ static VALUE rkadm5_close(VALUE self){
   ptr->ctx    = NULL;
   ptr->princ  = NULL;
   ptr->handle = NULL;
+  ptr->rb_context = Qnil;
 
   return self;
 }
