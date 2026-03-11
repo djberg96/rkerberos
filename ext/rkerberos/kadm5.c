@@ -413,11 +413,11 @@ static VALUE rkadm5_close(VALUE self){
 static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_principal_ent_rec* ent){
   krb5_error_code kerror;
   VALUE v_principal;
-  VALUE v_args[1];
+  VALUE v_opts = rb_hash_new();
 
-  v_args[0] = v_name;
+  rb_hash_aset(v_opts, ID2SYM(rb_intern("name")), v_name);
 
-  v_principal = rb_class_new_instance(1, v_args, cKrb5Principal);
+  v_principal = rb_class_new_instance(1, &v_opts, cKrb5Principal);
 
   rb_iv_set(v_principal, "@attributes", LONG2FIX(ent->attributes));
   rb_iv_set(v_principal, "@aux_attributes", INT2FIX(ent->aux_attributes));

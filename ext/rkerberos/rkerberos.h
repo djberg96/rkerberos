@@ -102,6 +102,7 @@ typedef struct {
 typedef struct {
   krb5_context ctx;
   krb5_principal principal;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KRB5_PRINC;
 
 typedef struct {
