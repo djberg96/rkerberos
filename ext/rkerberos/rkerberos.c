@@ -25,6 +25,13 @@ VALUE rb_hash_aref2(VALUE v_hash, VALUE v_key){
 
 
 // TypedData functions for RUBY_KRB5
+static void rkrb5_typed_mark(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5 *r = (RUBY_KRB5 *)ptr;
+  if (r->rb_context != Qnil)
+    rb_gc_mark(r->rb_context);
+}
+
 static void rkrb5_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KRB5 *r = (RUBY_KRB5 *)ptr;
@@ -34,7 +41,7 @@ static void rkrb5_typed_free(void *ptr) {
     krb5_free_cred_contents(r->ctx, &r->creds);
   if (r->princ)
     krb5_free_principal(r->ctx, r->princ);
-  if (r->ctx)
+  if (r->ctx && r->rb_context == Qnil)
     krb5_free_context(r->ctx);
   free(r);
 }
@@ -45,7 +52,7 @@ static size_t rkrb5_typed_size(const void *ptr) {
 
 static const rb_data_type_t rkrb5_data_type = {
   "RUBY_KRB5",
-  {NULL, rkrb5_typed_free, rkrb5_typed_size,},
+  {rkrb5_typed_mark, rkrb5_typed_free, rkrb5_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -53,6 +60,7 @@ static const rb_data_type_t rkrb5_data_type = {
 static VALUE rkrb5_allocate(VALUE klass){
   RUBY_KRB5* ptr = ALLOC(RUBY_KRB5);
   memset(ptr, 0, sizeof(RUBY_KRB5));
+  ptr->rb_context = Qnil;
   return TypedData_Wrap_Struct(klass, &rkrb5_data_type, ptr);
 }
 
@@ -63,16 +71,41 @@ static VALUE rkrb5_allocate(VALUE klass){
  * Creates and returns a new Kerberos::Krb5 object. This initializes the
  * context for future method calls on that object.
  */
-static VALUE rkrb5_initialize(VALUE self){
+static VALUE rkrb5_initialize(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5* ptr;
+  VALUE v_opts, v_context;
   krb5_error_code kerror;
 
   TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
-  kerror = krb5_init_context(&ptr->ctx);
+  rb_scan_args(argc, argv, "0:", &v_opts);
 
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+  v_context = Qnil;
+
+  if(!NIL_P(v_opts)){
+    v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
+  }
+
+  if(RTEST(v_context)){
+    RUBY_KRB5_CONTEXT* ctx_ptr;
+
+    if(!rb_obj_is_kind_of(v_context, cKrb5Context))
+      rb_raise(rb_eTypeError, "context must be a Kerberos::Krb5::Context object");
+
+    TypedData_Get_Struct(v_context, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ctx_ptr);
+
+    if(!ctx_ptr->ctx)
+      rb_raise(cKrb5Exception, "context is closed");
+
+    ptr->ctx = ctx_ptr->ctx;
+    ptr->rb_context = v_context;
+  }
+  else{
+    kerror = krb5_init_context(&ptr->ctx);
+
+    if(kerror)
+      rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+  }
 
   if(rb_block_given_p()){
     rb_ensure(rb_yield, self, rkrb5_close, self);
@@ -580,11 +613,12 @@ static VALUE rkrb5_close(VALUE self){
   if(ptr->princ)
     krb5_free_principal(ptr->ctx, ptr->princ);
 
-  if(ptr->ctx)
+  if(ptr->ctx && ptr->rb_context == Qnil)
     krb5_free_context(ptr->ctx);
 
   ptr->ctx = NULL;
   ptr->princ = NULL;
+  ptr->rb_context = Qnil;
 
   return Qtrue;
 }
@@ -790,7 +824,7 @@ void Init_rkerberos(void){
   rb_define_alloc_func(cKrb5, rkrb5_allocate);
 
   // Initializers
-  rb_define_method(cKrb5, "initialize", rkrb5_initialize, 0);
+  rb_define_method(cKrb5, "initialize", rkrb5_initialize, -1);
 
   // Krb5 Methods
   rb_define_method(cKrb5, "authenticate!", rkrb5_authenticate_bang, -1);

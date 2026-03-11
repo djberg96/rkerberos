@@ -31,6 +31,26 @@ RSpec.describe Kerberos::Krb5 do
     described_class.new { |k| expect(k).to be_a(described_class) }
   end
 
+  describe 'constructor' do
+    it 'accepts a context keyword argument' do
+      context = Kerberos::Krb5::Context.new
+      k = described_class.new(context: context)
+      expect(k).to be_a(described_class)
+      expect(k.get_default_realm).to eq(@realm)
+      k.close
+    end
+
+    it 'raises TypeError if context is not a Kerberos::Krb5::Context' do
+      expect { described_class.new(context: 'bad') }.to raise_error(TypeError, /context must be/)
+    end
+
+    it 'raises an error if the context is closed' do
+      context = Kerberos::Krb5::Context.new
+      context.close
+      expect { described_class.new(context: context) }.to raise_error(Kerberos::Krb5::Exception, /context is closed/)
+    end
+  end
+
   describe '#get_default_realm' do
     it 'responds to get_default_realm' do
       expect(krb5).to respond_to(:get_default_realm)

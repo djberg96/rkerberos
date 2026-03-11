@@ -67,6 +67,7 @@ typedef struct {
   krb5_creds creds;
   krb5_principal princ;
   krb5_keytab keytab;
+  VALUE rb_context;
 } RUBY_KRB5;
 
 // Kerberos::Context
