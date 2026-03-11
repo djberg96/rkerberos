@@ -107,6 +107,7 @@ typedef struct {
   krb5_context ctx;
   krb5_ccache ccache;
   krb5_principal principal;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KRB5_CCACHE;
 
 #ifdef HAVE_KADM5_ADMIN_H
