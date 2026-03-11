@@ -439,7 +439,7 @@ static VALUE rkrb5_keytab_dup(VALUE self){
 
 /*
  * call-seq:
- *   Kerberos::Krb5::Keytab.new(name = nil, context: nil)
+ *   Kerberos::Krb5::Keytab.new(name: nil, context: nil)
  *
  * Creates and returns a new Kerberos::Krb5::Keytab object. This initializes
  * the context and keytab for future method calls on that object.
@@ -458,11 +458,11 @@ static VALUE rkrb5_keytab_dup(VALUE self){
  *   keytab = Kerberos::Krb5::Keytab.new
  *
  *   # Using an explicit keytab
- *   keytab = Kerberos::Krb5::Keytab.new('FILE:/etc/krb5.keytab')
+ *   keytab = Kerberos::Krb5::Keytab.new(name: 'FILE:/etc/krb5.keytab')
  *
  *   # Using a custom context
  *   ctx = Kerberos::Krb5::Context.new
- *   keytab = Kerberos::Krb5::Keytab.new('FILE:/etc/krb5.keytab', context: ctx)
+ *   keytab = Kerberos::Krb5::Keytab.new(name: 'FILE:/etc/krb5.keytab', context: ctx)
  */
 static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
@@ -474,10 +474,12 @@ static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
 
   TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
-  rb_scan_args(argc, argv, "01:", &v_keytab_name, &v_opts);
+  rb_scan_args(argc, argv, "0:", &v_opts);
 
-  if(!NIL_P(v_opts))
+  if(!NIL_P(v_opts)){
+    v_keytab_name = rb_hash_aref2(v_opts, ID2SYM(rb_intern("name")));
     v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
+  }
 
   // Initialize or borrow the context
   if(RTEST(v_context)){

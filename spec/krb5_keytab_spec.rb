@@ -37,25 +37,29 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
   subject(:keytab) { described_class.new }
 
   describe 'constructor' do
-    it 'accepts an optional name' do
-      expect { described_class.new("FILE:/usr/local/var/keytab") }.not_to raise_error
-      expect { described_class.new("FILE:/bogus/keytab") }.not_to raise_error
+    it 'accepts an optional name keyword' do
+      expect { described_class.new(name: "FILE:/usr/local/var/keytab") }.not_to raise_error
+      expect { described_class.new(name: "FILE:/bogus/keytab") }.not_to raise_error
     end
 
     it 'raises error for invalid residual type' do
       expect {
-        described_class.new("BOGUS:/tmp/keytab")
+        described_class.new(name: "BOGUS:/tmp/keytab")
       }.to raise_error(Kerberos::Krb5::Keytab::Exception)
     end
 
     it 'accepts a context keyword argument' do
       ctx = Kerberos::Krb5::Context.new
-      expect { described_class.new(@keytab_name, context: ctx) }.not_to raise_error
+      expect { described_class.new(name: @keytab_name, context: ctx) }.not_to raise_error
     end
 
     it 'works with context and no name' do
       ctx = Kerberos::Krb5::Context.new
       expect { described_class.new(context: ctx) }.not_to raise_error
+    end
+
+    it 'rejects positional arguments' do
+      expect { described_class.new(@keytab_name) }.to raise_error(ArgumentError)
     end
 
     it 'raises TypeError for non-Context context argument' do
@@ -71,7 +75,7 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
 
   describe '#keytab_name and #keytab_type' do
     it 'returns the underlying name and type strings' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       expect(kt).to respond_to(:keytab_name)
       expect(kt).to respond_to(:keytab_type)
 
@@ -87,30 +91,30 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
 
   describe '#close' do
     it 'returns true' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       expect(kt.close).to eq(true)
     end
 
     it 'can be called multiple times without error' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       kt.close
       expect { kt.close }.not_to raise_error
     end
 
     it 'raises an error when calling keytab_name after close' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       kt.close
       expect { kt.keytab_name }.to raise_error(Kerberos::Krb5::Exception)
     end
 
     it 'raises an error when calling keytab_type after close' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       kt.close
       expect { kt.keytab_type }.to raise_error(Kerberos::Krb5::Exception)
     end
 
     it 'does not segfault when garbage collected after close' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       kt.close
       kt = nil
       GC.start
@@ -172,7 +176,7 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
 
   describe '#each' do
     it 'yields keytab entries for a valid keytab' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       entries = []
       kt.each { |entry| entries << entry }
       expect(entries.length).to eq(2)
@@ -186,14 +190,14 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
     end
 
     it 'does not leak resources when the block raises' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       expect {
         kt.each { |_| raise "boom" }
       }.to raise_error(RuntimeError, "boom")
     end
 
     it 'does not leak resources when the block breaks' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       result = catch(:done) do
         kt.each { |_| throw :done, :escaped }
         :completed
@@ -204,7 +208,7 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
 
   describe '#get_entry' do
     it 'finds an entry by principal name' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       entry = kt.get_entry("testuser1@#{@realm}")
       expect(entry).to be_a(Kerberos::Krb5::Keytab::Entry)
       expect(entry.principal).to eq("testuser1@#{@realm}")
@@ -214,14 +218,14 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
     end
 
     it 'finds an entry filtering by vno' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       entry = kt.get_entry("testuser1@#{@realm}", 1)
       expect(entry.principal).to eq("testuser1@#{@realm}")
       expect(entry.vno).to eq(1)
     end
 
     it 'finds an entry filtering by vno and enctype' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       # aes128-cts-hmac-sha1-96 is enctype 17
       entry = kt.get_entry("testuser1@#{@realm}", 1, 17)
       expect(entry.principal).to eq("testuser1@#{@realm}")
@@ -230,21 +234,21 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
     end
 
     it 'raises an error for a non-existent principal' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       expect {
         kt.get_entry("bogus@#{@realm}")
       }.to raise_error(Kerberos::Krb5::Exception)
     end
 
     it 'is aliased as find' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       expect(kt.method(:find)).to eq(kt.method(:get_entry))
     end
   end
 
   describe '#dup' do
     it 'creates an independent handle referring to same keytab' do
-      kt1 = described_class.new(@keytab_name)
+      kt1 = described_class.new(name: @keytab_name)
       kt2 = kt1.dup
       expect(kt2).to be_a(described_class)
       expect(kt2.keytab_name).to eq(kt1.keytab_name)
@@ -255,7 +259,7 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
     end
 
     it 'clone is an alias for dup' do
-      kt = described_class.new(@keytab_name)
+      kt = described_class.new(name: @keytab_name)
       expect(kt.method(:clone)).to eq(kt.method(:dup))
     end
   end
