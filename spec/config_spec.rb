@@ -11,6 +11,34 @@ RSpec.describe 'Kerberos::Kadm5::Config', :kadm5 do
     expect(config).to be_frozen
   end
 
+  describe 'constructor' do
+    it 'can be called with no arguments' do
+      expect { klass.new }.not_to raise_error
+    end
+
+    it 'accepts a context option' do
+      ctx = Kerberos::Krb5::Context.new
+      expect { klass.new(context: ctx) }.not_to raise_error
+    end
+
+    it 'returns same realm with or without context' do
+      ctx = Kerberos::Krb5::Context.new
+      c1 = klass.new
+      c2 = klass.new(context: ctx)
+      expect(c2.realm).to eq(c1.realm)
+    end
+
+    it 'raises TypeError for non-Context context argument' do
+      expect { klass.new(context: "bad") }.to raise_error(TypeError)
+    end
+
+    it 'raises error for a closed context' do
+      ctx = Kerberos::Krb5::Context.new
+      ctx.close
+      expect { klass.new(context: ctx) }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
+
   describe 'realm' do
     it 'responds to realm' do
       expect(config).to respond_to(:realm)

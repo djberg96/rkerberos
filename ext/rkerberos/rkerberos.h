@@ -114,6 +114,7 @@ typedef struct {
 typedef struct {
   krb5_context ctx;
   kadm5_config_params config;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KADM5_CONFIG;
 
 typedef struct {
