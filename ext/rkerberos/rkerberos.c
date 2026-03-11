@@ -66,10 +66,19 @@ static VALUE rkrb5_allocate(VALUE klass){
 
 /*
  * call-seq:
- *   Kerberos::Krb5.new
+ *   Kerberos::Krb5.new(context: nil)
  *
  * Creates and returns a new Kerberos::Krb5 object. This initializes the
  * context for future method calls on that object.
+ *
+ * If a +context+ keyword argument is provided, it must be a
+ * Kerberos::Krb5::Context object. The context will be borrowed rather than
+ * creating a new one internally via krb5_init_context. The caller is
+ * responsible for keeping the Context object alive for the lifetime of
+ * this Krb5 instance.
+ *
+ * A block form is also supported. If a block is given, the object is
+ * yielded to the block and automatically closed when the block returns.
  */
 static VALUE rkrb5_initialize(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5* ptr;
