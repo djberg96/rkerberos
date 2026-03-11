@@ -96,6 +96,7 @@ typedef struct {
   krb5_context ctx;
   krb5_creds creds;
   krb5_keytab keytab;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KRB5_KEYTAB;
 
 typedef struct {

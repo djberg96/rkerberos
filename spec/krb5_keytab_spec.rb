@@ -47,6 +47,26 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
         described_class.new("BOGUS:/tmp/keytab")
       }.to raise_error(Kerberos::Krb5::Keytab::Exception)
     end
+
+    it 'accepts a context keyword argument' do
+      ctx = Kerberos::Krb5::Context.new
+      expect { described_class.new(@keytab_name, context: ctx) }.not_to raise_error
+    end
+
+    it 'works with context and no name' do
+      ctx = Kerberos::Krb5::Context.new
+      expect { described_class.new(context: ctx) }.not_to raise_error
+    end
+
+    it 'raises TypeError for non-Context context argument' do
+      expect { described_class.new(context: "bad") }.to raise_error(TypeError)
+    end
+
+    it 'raises error for a closed context' do
+      ctx = Kerberos::Krb5::Context.new
+      ctx.close
+      expect { described_class.new(context: ctx) }.to raise_error(Kerberos::Krb5::Exception)
+    end
   end
 
   describe '#keytab_name and #keytab_type' do
