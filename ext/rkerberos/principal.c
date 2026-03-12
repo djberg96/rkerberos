@@ -280,6 +280,24 @@ static VALUE rkrb5_princ_inspect(VALUE self){
   return v_str;
 }
 
+/*
+ * call-seq:
+ *   principal.principal_type -> Integer
+ *
+ * Returns the type of the principal as an integer, e.g.
+ * KRB5_NT_PRINCIPAL (1), KRB5_NT_SRV_HST (2), etc.
+ */
+static VALUE rkrb5_princ_get_type(VALUE self){
+  RUBY_KRB5_PRINC* ptr;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
+
+  if(!ptr->principal)
+    rb_raise(cKrb5Exception, "no principal has been established");
+
+  return INT2FIX(krb5_princ_type(ptr->ctx, ptr->principal));
+}
+
 void Init_principal(void){
   /* The Kerberos::Krb5::Principal class encapsulates a Kerberos principal. */
   cKrb5Principal = rb_define_class_under(cKrb5, "Principal", rb_cObject);
@@ -298,6 +316,7 @@ void Init_principal(void){
   rb_define_method(cKrb5Principal, "realm", rkrb5_princ_get_realm, 0);
   rb_define_method(cKrb5Principal, "realm=", rkrb5_princ_set_realm, 1);
   rb_define_method(cKrb5Principal, "==", rkrb5_princ_equal, 1);
+  rb_define_method(cKrb5Principal, "principal_type", rkrb5_princ_get_type, 0);
 
   // Attributes
 

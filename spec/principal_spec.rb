@@ -109,4 +109,21 @@ RSpec.describe Kerberos::Krb5::Principal do
       expect { princ.mod_date }.not_to raise_error
     end
   end
+
+  describe '#principal_type' do
+    it 'returns an integer for a named principal' do
+      p = described_class.new(name: 'user@EXAMPLE.COM')
+      expect(p.principal_type).to be_a(Integer)
+    end
+
+    it 'returns KRB5_NT_PRINCIPAL (1) for a simple name' do
+      p = described_class.new(name: 'user@EXAMPLE.COM')
+      expect(p.principal_type).to eq(1)
+    end
+
+    it 'raises an error when no principal has been established' do
+      p = described_class.new
+      expect { p.principal_type }.to raise_error(Kerberos::Krb5::Exception, /no principal/)
+    end
+  end
 end

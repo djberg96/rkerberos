@@ -659,6 +659,26 @@ static VALUE rkrb5_s_keytab_foreach(int argc, VALUE* argv, VALUE klass){
   return Qnil;
 }
 
+/*
+ * call-seq:
+ *   keytab.have_content? -> true or false
+ *
+ * Returns true if the keytab exists and contains entries, false otherwise.
+ */
+static VALUE rkrb5_keytab_have_content(VALUE self){
+  RUBY_KRB5_KEYTAB* ptr;
+  krb5_error_code kerror;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  kerror = krb5_kt_have_content(ptr->ctx, ptr->keytab);
+
+  return kerror ? Qfalse : Qtrue;
+}
+
 void Init_keytab(void){
   /* The Kerberos::Krb5::Keytab class encapsulates a Kerberos keytab. */
   cKrb5Keytab = rb_define_class_under(cKrb5, "Keytab", rb_cObject);
@@ -687,6 +707,7 @@ void Init_keytab(void){
   rb_define_method(cKrb5Keytab, "keytab_name", rkrb5_keytab_get_name, 0);
   rb_define_method(cKrb5Keytab, "keytab_type", rkrb5_keytab_get_type, 0);
   rb_define_method(cKrb5Keytab, "dup", rkrb5_keytab_dup, 0);
+  rb_define_method(cKrb5Keytab, "have_content?", rkrb5_keytab_have_content, 0);
   rb_define_alias(cKrb5Keytab, "clone", "dup");
 
   // TODO: Move these into Kadm5 and/or figure out how to set the vno properly.

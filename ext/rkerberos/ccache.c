@@ -369,6 +369,35 @@ static VALUE rkrb5_ccache_dup(VALUE self){
   return newobj;
 }
 
+/*
+ * call-seq:
+ *   ccache.full_name -> String
+ *
+ * Returns the full name of the credential cache, including the type prefix,
+ * e.g. "FILE:/tmp/krb5cc_1000".
+ */
+static VALUE rkrb5_ccache_full_name(VALUE self){
+  RUBY_KRB5_CCACHE* ptr;
+  char *full_name;
+  krb5_error_code kerror;
+  VALUE result;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  kerror = krb5_cc_get_full_name(ptr->ctx, ptr->ccache, &full_name);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_cc_get_full_name: %s", error_message(kerror));
+
+  result = rb_str_new2(full_name);
+  krb5_free_string(ptr->ctx, full_name);
+
+  return result;
+}
+
 void Init_ccache(void){
   /* The Kerberos::Krb5::CredentialsCache class encapsulates a Kerberos credentials cache. */
   cKrb5CCache = rb_define_class_under(cKrb5, "CredentialsCache", rb_cObject);
@@ -387,6 +416,7 @@ void Init_ccache(void){
   rb_define_method(cKrb5CCache, "destroy", rkrb5_ccache_destroy, 0);
   rb_define_method(cKrb5CCache, "primary_principal", rkrb5_ccache_primary_principal, 0);
   rb_define_method(cKrb5CCache, "principal", rkrb5_ccache_principal, 0);
+  rb_define_method(cKrb5CCache, "full_name", rkrb5_ccache_full_name, 0);
   rb_define_method(cKrb5CCache, "dup", rkrb5_ccache_dup, 0);
   rb_define_alias(cKrb5CCache, "clone", "dup");
 
