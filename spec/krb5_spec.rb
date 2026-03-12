@@ -242,4 +242,15 @@ RSpec.describe Kerberos::Krb5 do
       expect(ccache.primary_principal).to include('@')
     end
   end
+
+  describe '.thread_safe?' do
+    it 'returns a boolean' do
+      result = described_class.thread_safe?
+      expect([true, false]).to include(result)
+    end
+
+    it 'is callable without an instance' do
+      expect(described_class).to respond_to(:thread_safe?)
+    end
+  end
 end

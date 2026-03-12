@@ -824,6 +824,17 @@ static VALUE rkrb5_verify_init_creds(int argc, VALUE* argv, VALUE self){
   return Qtrue;
 }
 
+/*
+ * call-seq:
+ *   Kerberos::Krb5.thread_safe?
+ *
+ * Returns true if the Kerberos library was built with multithread support,
+ * false otherwise.
+ */
+static VALUE rkrb5_s_thread_safe(VALUE klass){
+  return krb5_is_thread_safe() ? Qtrue : Qfalse;
+}
+
 void Init_rkerberos(void){
   mKerberos      = rb_define_module("Kerberos");
   cKrb5          = rb_define_class_under(mKerberos, "Krb5", rb_cObject);
@@ -834,6 +845,9 @@ void Init_rkerberos(void){
 
   // Initializers
   rb_define_method(cKrb5, "initialize", rkrb5_initialize, -1);
+
+  // Singleton Methods
+  rb_define_singleton_method(cKrb5, "thread_safe?", rkrb5_s_thread_safe, 0);
 
   // Krb5 Methods
   rb_define_method(cKrb5, "authenticate!", rkrb5_authenticate_bang, -1);

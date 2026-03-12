@@ -263,4 +263,27 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
       expect(kt.method(:clone)).to eq(kt.method(:dup))
     end
   end
+
+  describe '#have_content?' do
+    it 'returns true for a keytab with entries' do
+      kt = described_class.new(name: @keytab_name)
+      expect(kt.have_content?).to be true
+      kt.close
+    end
+
+    it 'returns false for an empty keytab' do
+      empty_file = File.join(Dir.tmpdir, 'empty_test.keytab')
+      FileUtils.touch(empty_file)
+      kt = described_class.new(name: "FILE:#{empty_file}")
+      expect(kt.have_content?).to be false
+      kt.close
+      FileUtils.rm_f(empty_file)
+    end
+
+    it 'raises when the context is closed' do
+      kt = described_class.new(name: @keytab_name)
+      kt.close
+      expect { kt.have_content? }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
 end

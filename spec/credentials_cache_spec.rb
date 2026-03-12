@@ -214,4 +214,26 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
       expect { c.dup }.to raise_error(Kerberos::Krb5::Exception)
     end
   end
+
+  describe '#full_name' do
+    it 'returns a string including the type prefix' do
+      cc = described_class.new(principal: princ)
+      name = cc.full_name
+      expect(name).to be_a(String)
+      expect(name).to match(/\A\w+:/)
+      cc.close
+    end
+
+    it 'includes FILE: for a file-based cache' do
+      cc = described_class.new(principal: princ, cache_name: cfile)
+      expect(cc.full_name).to start_with('FILE:')
+      cc.close
+    end
+
+    it 'raises when the context is closed' do
+      cc = described_class.new(principal: princ)
+      cc.close
+      expect { cc.full_name }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
 end
