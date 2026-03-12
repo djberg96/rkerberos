@@ -23,12 +23,32 @@ RSpec.describe Kerberos::Krb5 do
   let(:service) { 'kadmin/admin' }
 
   it 'has the correct version constant' do
-    expect(Kerberos::Krb5::VERSION).to eq('0.2.3')
+    expect(Kerberos::Krb5::VERSION).to eq('0.3.0')
   end
 
   it 'accepts a block and yields itself' do
     expect { described_class.new {} }.not_to raise_error
     described_class.new { |k| expect(k).to be_a(described_class) }
+  end
+
+  describe 'constructor' do
+    it 'accepts a context keyword argument' do
+      context = Kerberos::Krb5::Context.new
+      k = described_class.new(context: context)
+      expect(k).to be_a(described_class)
+      expect(k.get_default_realm).to eq(@realm)
+      k.close
+    end
+
+    it 'raises TypeError if context is not a Kerberos::Krb5::Context' do
+      expect { described_class.new(context: 'bad') }.to raise_error(TypeError, /context must be/)
+    end
+
+    it 'raises an error if the context is closed' do
+      context = Kerberos::Krb5::Context.new
+      context.close
+      expect { described_class.new(context: context) }.to raise_error(Kerberos::Krb5::Exception, /context is closed/)
+    end
   end
 
   describe '#get_default_realm' do

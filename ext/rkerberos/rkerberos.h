@@ -67,6 +67,7 @@ typedef struct {
   krb5_creds creds;
   krb5_principal princ;
   krb5_keytab keytab;
+  VALUE rb_context;
 } RUBY_KRB5;
 
 // Kerberos::Context
@@ -81,6 +82,7 @@ typedef struct {
   krb5_principal princ;
   void* handle;
   char** db_args;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KADM5;
 
 // Kerberos::Krb5::Keytab::Entry
@@ -96,23 +98,27 @@ typedef struct {
   krb5_context ctx;
   krb5_creds creds;
   krb5_keytab keytab;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KRB5_KEYTAB;
 
 typedef struct {
   krb5_context ctx;
   krb5_principal principal;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KRB5_PRINC;
 
 typedef struct {
   krb5_context ctx;
   krb5_ccache ccache;
   krb5_principal principal;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KRB5_CCACHE;
 
 #ifdef HAVE_KADM5_ADMIN_H
 typedef struct {
   krb5_context ctx;
   kadm5_config_params config;
+  VALUE rb_context; // Ruby Context object when borrowed, Qnil if ctx is owned
 } RUBY_KADM5_CONFIG;
 
 typedef struct {

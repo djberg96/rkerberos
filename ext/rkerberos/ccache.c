@@ -4,6 +4,13 @@ VALUE cKrb5CCache;
 
 
 // TypedData functions for RUBY_KRB5_CCACHE
+static void rkrb5_ccache_typed_mark(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5_CCACHE *c = (RUBY_KRB5_CCACHE *)ptr;
+  if (c->rb_context != Qnil)
+    rb_gc_mark(c->rb_context);
+}
+
 static void rkrb5_ccache_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KRB5_CCACHE *c = (RUBY_KRB5_CCACHE *)ptr;
@@ -11,7 +18,7 @@ static void rkrb5_ccache_typed_free(void *ptr) {
     krb5_cc_close(c->ctx, c->ccache);
   if (c->principal)
     krb5_free_principal(c->ctx, c->principal);
-  if (c->ctx)
+  if (c->ctx && c->rb_context == Qnil)
     krb5_free_context(c->ctx);
   free(c);
 }
@@ -22,7 +29,7 @@ static size_t rkrb5_ccache_typed_size(const void *ptr) {
 
 const rb_data_type_t rkrb5_ccache_data_type = {
   "RUBY_KRB5_CCACHE",
-  {NULL, rkrb5_ccache_typed_free, rkrb5_ccache_typed_size,},
+  {rkrb5_ccache_typed_mark, rkrb5_ccache_typed_free, rkrb5_ccache_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -30,20 +37,25 @@ const rb_data_type_t rkrb5_ccache_data_type = {
 static VALUE rkrb5_ccache_allocate(VALUE klass){
   RUBY_KRB5_CCACHE* ptr = ALLOC(RUBY_KRB5_CCACHE);
   memset(ptr, 0, sizeof(RUBY_KRB5_CCACHE));
+  ptr->rb_context = Qnil;
   return TypedData_Wrap_Struct(klass, &rkrb5_ccache_data_type, ptr);
 }
 
 /*
  * call-seq:
- *   Kerberos::CredentialsCache.new(principal = nil, cache_name = nil)
+ *   Kerberos::CredentialsCache.new(principal: nil, cache_name: nil, context: nil)
  *
- * Creates and returns a new Kerberos::CredentialsCache object. If cache_name
- * is specified, then that cache is used, which must be in "type:residual"
- * format, where 'type' is a type known to Kerberos (typically 'FILE').
+ * Creates and returns a new Kerberos::CredentialsCache object. Accepts the
+ * following keyword arguments:
  *
- * If a +principal+ is specified, then it creates or refreshes the credentials
- * cache with the primary principal set to +principal+. If the credentials
- * cache already exists, its contents are destroyed.
+ * - +principal+: A string principal name. If specified, the credentials cache
+ *   is created or refreshed with this as the primary principal. If a cache
+ *   already exists, its contents are destroyed.
+ * - +cache_name+: The name of the credentials cache to use, which must be in
+ *   "type:residual" format, where 'type' is a type known to Kerberos
+ *   (typically 'FILE'). If omitted, the default cache is used.
+ * - +context+: A Kerberos::Krb5::Context object. If provided, that context is
+ *   used instead of creating a new one via krb5_init_context.
  *
  * Note that the principal's credentials are not set via the constructor.
  * It merely creates the cache and sets the default principal.
@@ -51,20 +63,45 @@ static VALUE rkrb5_ccache_allocate(VALUE klass){
 static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5_CCACHE* ptr;
   krb5_error_code kerror;
-  VALUE v_principal, v_name;
+  VALUE v_opts, v_principal, v_name, v_context;
 
   TypedData_Get_Struct(self, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ptr);
 
-  rb_scan_args(argc, argv, "02", &v_principal, &v_name);
+  rb_scan_args(argc, argv, "0:", &v_opts);
+
+  if(NIL_P(v_opts))
+    v_opts = rb_hash_new();
+
+  v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
+  v_name = rb_hash_aref2(v_opts, ID2SYM(rb_intern("cache_name")));
+  v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
 
   if(RTEST(v_principal))
     Check_Type(v_principal, T_STRING);
 
-  // Initialize the context
-  kerror = krb5_init_context(&ptr->ctx);
+  // Initialize or borrow the context
+  if(RTEST(v_context)){
+    RUBY_KRB5_CONTEXT* ctx_ptr;
 
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+    if(!rb_obj_is_kind_of(v_context, cKrb5Context))
+      rb_raise(rb_eTypeError, "context must be a Kerberos::Krb5::Context object");
+
+    TypedData_Get_Struct(v_context, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ctx_ptr);
+
+    if(!ctx_ptr->ctx)
+      rb_raise(cKrb5Exception, "context is closed");
+
+    ptr->ctx = ctx_ptr->ctx;
+    ptr->rb_context = v_context;
+  }
+  else{
+    kerror = krb5_init_context(&ptr->ctx);
+
+    if(kerror)
+      rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+
+    ptr->rb_context = Qnil;
+  }
 
   // Convert the principal name to a principal object
   if(RTEST(v_principal)){
@@ -127,12 +164,13 @@ static VALUE rkrb5_ccache_close(VALUE self){
   if(ptr->principal)
     krb5_free_principal(ptr->ctx, ptr->principal);
 
-  if(ptr->ctx)
+  if(ptr->ctx && ptr->rb_context == Qnil)
     krb5_free_context(ptr->ctx);
 
   ptr->ccache = NULL;
   ptr->ctx = NULL;
   ptr->principal = NULL;
+  ptr->rb_context = Qnil;
 
   return self;
 }
@@ -264,12 +302,13 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
       if(ptr->principal)
         krb5_free_principal(ptr->ctx, ptr->principal);
 
-      if(ptr->ctx)
+      if(ptr->ctx && ptr->rb_context == Qnil)
         krb5_free_context(ptr->ctx);
 
       ptr->ccache = NULL;
       ptr->ctx = NULL;
       ptr->principal = NULL;
+      ptr->rb_context = Qnil;
 
       rb_raise(cKrb5Exception, "krb5_cc_destroy: %s", error_message(kerror));
     }
@@ -278,12 +317,13 @@ static VALUE rkrb5_ccache_destroy(VALUE self){
   if(ptr->principal)
     krb5_free_principal(ptr->ctx, ptr->principal);
 
-  if(ptr->ctx)
+  if(ptr->ctx && ptr->rb_context == Qnil)
     krb5_free_context(ptr->ctx);
 
   ptr->ccache = NULL;
   ptr->ctx = NULL;
   ptr->principal = NULL;
+  ptr->rb_context = Qnil;
 
   return v_bool;
 }

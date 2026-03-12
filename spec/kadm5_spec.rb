@@ -58,6 +58,21 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
     it 'requires service to be a string' do
       expect { subject.new(principal: user, password: pass, service: 1) }.to raise_error(TypeError)
     end
+
+    it 'accepts a context keyword argument' do
+      ctx = Kerberos::Krb5::Context.new
+      expect { subject.new(principal: user, password: pass, context: ctx) }.not_to raise_error
+    end
+
+    it 'raises TypeError for non-Context context argument' do
+      expect { subject.new(principal: user, password: pass, context: "bad") }.to raise_error(TypeError)
+    end
+
+    it 'raises error for a closed context' do
+      ctx = Kerberos::Krb5::Context.new
+      ctx.close
+      expect { subject.new(principal: user, password: pass, context: ctx) }.to raise_error(Kerberos::Krb5::Exception)
+    end
   end
 
   describe '#get_privileges' do

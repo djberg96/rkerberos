@@ -4,6 +4,13 @@ VALUE cKrb5Keytab, cKrb5KeytabException;
 
 
 // TypedData functions for RUBY_KRB5_KEYTAB
+static void rkrb5_keytab_typed_mark(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5_KEYTAB *kt = (RUBY_KRB5_KEYTAB *)ptr;
+  if (kt->rb_context != Qnil)
+    rb_gc_mark(kt->rb_context);
+}
+
 void rkrb5_keytab_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KRB5_KEYTAB *kt = (RUBY_KRB5_KEYTAB *)ptr;
@@ -11,7 +18,7 @@ void rkrb5_keytab_typed_free(void *ptr) {
     krb5_kt_close(kt->ctx, kt->keytab);
   if (kt->ctx)
     krb5_free_cred_contents(kt->ctx, &kt->creds);
-  if (kt->ctx)
+  if (kt->ctx && kt->rb_context == Qnil)
     krb5_free_context(kt->ctx);
   free(kt);
 }
@@ -23,13 +30,14 @@ size_t rkrb5_keytab_typed_size(const void *ptr) {
 // Must NOT be static so it is exported
 const rb_data_type_t rkrb5_keytab_data_type = {
   "RUBY_KRB5_KEYTAB",
-  {NULL, rkrb5_keytab_typed_free, rkrb5_keytab_typed_size,},
+  {rkrb5_keytab_typed_mark, rkrb5_keytab_typed_free, rkrb5_keytab_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 VALUE rkrb5_keytab_allocate(VALUE klass){
   RUBY_KRB5_KEYTAB* ptr = ALLOC(RUBY_KRB5_KEYTAB);
   memset(ptr, 0, sizeof(RUBY_KRB5_KEYTAB));
+  ptr->rb_context = Qnil;
   return TypedData_Wrap_Struct(klass, &rkrb5_keytab_data_type, ptr);
 }
 
@@ -167,10 +175,11 @@ static VALUE rkrb5_keytab_close(VALUE self){
   if(ptr->ctx)
     krb5_free_cred_contents(ptr->ctx, &ptr->creds);
 
-  if(ptr->ctx)
+  if(ptr->ctx && ptr->rb_context == Qnil)
     krb5_free_context(ptr->ctx);
 
   ptr->ctx = NULL;
+  ptr->rb_context = Qnil;
 
   return Qtrue;
 }
@@ -430,7 +439,7 @@ static VALUE rkrb5_keytab_dup(VALUE self){
 
 /*
  * call-seq:
- *   Kerberos::Krb5::Keytab.new(name = nil)
+ *   Kerberos::Krb5::Keytab.new(name: nil, context: nil)
  *
  * Creates and returns a new Kerberos::Krb5::Keytab object. This initializes
  * the context and keytab for future method calls on that object.
@@ -439,28 +448,62 @@ static VALUE rkrb5_keytab_dup(VALUE self){
  * name is used. If a +name+ is provided it must be in the form 'type:residual'
  * where 'type' is a type known to the Kerberos library.
  *
+ * An optional +context+ keyword argument may be provided. If given, it must
+ * be a Kerberos::Krb5::Context object and will be used instead of creating
+ * a new context via krb5_init_context.
+ *
  * Examples:
  *
  *   # Using the default keytab
  *   keytab = Kerberos::Krb5::Keytab.new
  *
  *   # Using an explicit keytab
- *   keytab = Kerberos::Krb5::Keytab.new('FILE:/etc/krb5.keytab')
+ *   keytab = Kerberos::Krb5::Keytab.new(name: 'FILE:/etc/krb5.keytab')
+ *
+ *   # Using a custom context
+ *   ctx = Kerberos::Krb5::Context.new
+ *   keytab = Kerberos::Krb5::Keytab.new(name: 'FILE:/etc/krb5.keytab', context: ctx)
  */
 static VALUE rkrb5_keytab_initialize(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
   krb5_error_code kerror;
   char keytab_name[MAX_KEYTAB_NAME_LEN];
   VALUE v_keytab_name = Qnil;
+  VALUE v_opts = Qnil;
+  VALUE v_context = Qnil;
 
   TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
 
-  rb_scan_args(argc, argv, "01", &v_keytab_name);
+  rb_scan_args(argc, argv, "0:", &v_opts);
 
-  kerror = krb5_init_context(&ptr->ctx);
+  if(!NIL_P(v_opts)){
+    v_keytab_name = rb_hash_aref2(v_opts, ID2SYM(rb_intern("name")));
+    v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
+  }
 
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+  // Initialize or borrow the context
+  if(RTEST(v_context)){
+    RUBY_KRB5_CONTEXT* ctx_ptr;
+
+    if(!rb_obj_is_kind_of(v_context, cKrb5Context))
+      rb_raise(rb_eTypeError, "context must be a Kerberos::Krb5::Context object");
+
+    TypedData_Get_Struct(v_context, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ctx_ptr);
+
+    if(!ctx_ptr->ctx)
+      rb_raise(cKrb5Exception, "context is closed");
+
+    ptr->ctx = ctx_ptr->ctx;
+    ptr->rb_context = v_context;
+  }
+  else{
+    kerror = krb5_init_context(&ptr->ctx);
+
+    if(kerror)
+      rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+
+    ptr->rb_context = Qnil;
+  }
 
   // Use the default keytab name if one isn't provided.
   if(NIL_P(v_keytab_name)){

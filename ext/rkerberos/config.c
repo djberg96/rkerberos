@@ -6,12 +6,20 @@ VALUE cKeySalt;
 
 
 // TypedData functions for RUBY_KADM5_CONFIG
+static void rkadm5_config_typed_mark(void *ptr) {
+  if (!ptr) return;
+  RUBY_KADM5_CONFIG *c = (RUBY_KADM5_CONFIG *)ptr;
+  if (c->rb_context != Qnil)
+    rb_gc_mark(c->rb_context);
+}
+
 static void rkadm5_config_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KADM5_CONFIG *c = (RUBY_KADM5_CONFIG *)ptr;
   if (c->ctx) {
     kadm5_free_config_params(c->ctx, &c->config);
-    krb5_free_context(c->ctx);
+    if (c->rb_context == Qnil)
+      krb5_free_context(c->ctx);
   }
   free(c);
 }
@@ -22,7 +30,7 @@ static size_t rkadm5_config_typed_size(const void *ptr) {
 
 const rb_data_type_t rkadm5_config_data_type = {
   "RUBY_KADM5_CONFIG",
-  {NULL, rkadm5_config_typed_free, rkadm5_config_typed_size,},
+  {rkadm5_config_typed_mark, rkadm5_config_typed_free, rkadm5_config_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -30,6 +38,7 @@ const rb_data_type_t rkadm5_config_data_type = {
 static VALUE rkadm5_config_allocate(VALUE klass){
   RUBY_KADM5_CONFIG* ptr = ALLOC(RUBY_KADM5_CONFIG);
   memset(ptr, 0, sizeof(RUBY_KADM5_CONFIG));
+  ptr->rb_context = Qnil;
   return TypedData_Wrap_Struct(klass, &rkadm5_config_data_type, ptr);
 }
 
@@ -43,23 +52,57 @@ static VALUE rkeysalt_new(krb5_enctype enctype, krb5_int32 salttype){
 }
 
 /*
+ * call-seq:
+ *   Kerberos::Kadm5::Config.new(context: nil)
+ *
  * Returns a Kerberos::Kadm5::Config object. This object contains Kerberos
  * admin configuration.
+ *
+ * Accepts the following keyword argument:
+ *
+ * - +context+: A Kerberos::Krb5::Context object. If provided, that context is
+ *   used instead of creating a new one via krb5_init_context.
  *
  * Note that the returned object is frozen. Changes made to the Kerberos
  * admin configuration options after the call will not be reflected in this
  * object.
  */
-static VALUE rkadm5_config_initialize(VALUE self){
+static VALUE rkadm5_config_initialize(int argc, VALUE* argv, VALUE self){
   RUBY_KADM5_CONFIG* ptr;
   krb5_error_code kerror;
+  VALUE v_opts, v_context;
 
   TypedData_Get_Struct(self, RUBY_KADM5_CONFIG, &rkadm5_config_data_type, ptr);
 
-  kerror = krb5_init_context(&ptr->ctx);
+  rb_scan_args(argc, argv, "0:", &v_opts);
 
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+  if(NIL_P(v_opts))
+    v_opts = rb_hash_new();
+
+  v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
+
+  if(RTEST(v_context)){
+    RUBY_KRB5_CONTEXT* ctx_ptr;
+
+    if(!rb_obj_is_kind_of(v_context, cKrb5Context))
+      rb_raise(rb_eTypeError, "context must be a Kerberos::Krb5::Context object");
+
+    TypedData_Get_Struct(v_context, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ctx_ptr);
+
+    if(!ctx_ptr->ctx)
+      rb_raise(cKrb5Exception, "context is closed");
+
+    ptr->ctx = ctx_ptr->ctx;
+    ptr->rb_context = v_context;
+  }
+  else{
+    kerror = krb5_init_context(&ptr->ctx);
+
+    if(kerror)
+      rb_raise(cKrb5Exception, "krb5_init_context: %s", error_message(kerror));
+
+    ptr->rb_context = Qnil;
+  }
 
   kerror = kadm5_get_config_params(
     ptr->ctx,
@@ -300,7 +343,7 @@ void Init_config(void){
 
   // Initializer
 
-  rb_define_method(cKadm5Config, "initialize", rkadm5_config_initialize, 0);
+  rb_define_method(cKadm5Config, "initialize", rkadm5_config_initialize, -1);
 
   // Methods
 

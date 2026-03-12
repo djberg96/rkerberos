@@ -4,12 +4,19 @@ VALUE cKrb5Principal;
 
 
 // TypedData functions for RUBY_KRB5_PRINC
+static void rkrb5_princ_typed_mark(void *ptr) {
+  if (!ptr) return;
+  RUBY_KRB5_PRINC *p = (RUBY_KRB5_PRINC *)ptr;
+  if (p->rb_context != Qnil)
+    rb_gc_mark(p->rb_context);
+}
+
 static void rkrb5_princ_typed_free(void *ptr) {
   if (!ptr) return;
   RUBY_KRB5_PRINC *p = (RUBY_KRB5_PRINC *)ptr;
   if (p->principal)
     krb5_free_principal(p->ctx, p->principal);
-  if (p->ctx)
+  if (p->ctx && p->rb_context == Qnil)
     krb5_free_context(p->ctx);
   free(p);
 }
@@ -20,7 +27,7 @@ static size_t rkrb5_princ_typed_size(const void *ptr) {
 
 static const rb_data_type_t rkrb5_princ_data_type = {
   "RUBY_KRB5_PRINC",
-  {NULL, rkrb5_princ_typed_free, rkrb5_princ_typed_size,},
+  {rkrb5_princ_typed_mark, rkrb5_princ_typed_free, rkrb5_princ_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -28,34 +35,74 @@ static const rb_data_type_t rkrb5_princ_data_type = {
 static VALUE rkrb5_princ_allocate(VALUE klass){
   RUBY_KRB5_PRINC* ptr = ALLOC(RUBY_KRB5_PRINC);
   memset(ptr, 0, sizeof(RUBY_KRB5_PRINC));
+  ptr->rb_context = Qnil;
   return TypedData_Wrap_Struct(klass, &rkrb5_princ_data_type, ptr);
 }
 
 /*
  * call-seq:
- *   Kerberos::Krb5::Principal.new(name)
+ *   Kerberos::Krb5::Principal.new(name: nil, context: nil)
  *
  * Creates and returns a new Krb5::Principal object. If a block is provided
  * then it yields itself.
  *
+ * A principal +name+ may be provided as a keyword argument. If not provided
+ * or nil, the principal attribute will be nil.
+ *
+ * An optional +context+ keyword argument may be provided. If given, it must
+ * be a Kerberos::Krb5::Context object and will be used instead of creating
+ * a new context via krb5_init_context.
+ *
  * Example:
  *
- *   principal1 = Kerberos::Krb5::Principal.new('Jon')
+ *   principal1 = Kerberos::Krb5::Principal.new(name: 'Jon')
  *
- *   principal2 = Kerberos::Krb5::Principal.new('Jon') do |pr|
+ *   principal2 = Kerberos::Krb5::Principal.new(name: 'Jon') do |pr|
  *     pr.expire_time = Time.now + 20000
  *   end
+ *
+ *   ctx = Kerberos::Krb5::Context.new
+ *   principal3 = Kerberos::Krb5::Principal.new(name: 'Jon', context: ctx)
  */
-static VALUE rkrb5_princ_initialize(VALUE self, VALUE v_name){
+static VALUE rkrb5_princ_initialize(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5_PRINC* ptr;
   krb5_error_code kerror;
+  VALUE v_opts = Qnil;
+  VALUE v_name = Qnil;
+  VALUE v_context = Qnil;
 
   TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
 
-  kerror = krb5_init_context(&ptr->ctx);
+  rb_scan_args(argc, argv, "0:", &v_opts);
 
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_init_context failed: %s", error_message(kerror));
+  if(!NIL_P(v_opts)){
+    v_name = rb_hash_aref2(v_opts, ID2SYM(rb_intern("name")));
+    v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
+  }
+
+  // Initialize or borrow the context
+  if(RTEST(v_context)){
+    RUBY_KRB5_CONTEXT* ctx_ptr;
+
+    if(!rb_obj_is_kind_of(v_context, cKrb5Context))
+      rb_raise(rb_eTypeError, "context must be a Kerberos::Krb5::Context object");
+
+    TypedData_Get_Struct(v_context, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ctx_ptr);
+
+    if(!ctx_ptr->ctx)
+      rb_raise(cKrb5Exception, "context is closed");
+
+    ptr->ctx = ctx_ptr->ctx;
+    ptr->rb_context = v_context;
+  }
+  else{
+    kerror = krb5_init_context(&ptr->ctx);
+
+    if(kerror)
+      rb_raise(cKrb5Exception, "krb5_init_context failed: %s", error_message(kerror));
+
+    ptr->rb_context = Qnil;
+  }
 
   if(NIL_P(v_name)){
     rb_iv_set(self, "@principal", Qnil);
@@ -243,7 +290,7 @@ void Init_principal(void){
 
   // Constructor
 
-  rb_define_method(cKrb5Principal, "initialize", rkrb5_princ_initialize, 1);
+  rb_define_method(cKrb5Principal, "initialize", rkrb5_princ_initialize, -1);
 
   // Instance Methods
 
