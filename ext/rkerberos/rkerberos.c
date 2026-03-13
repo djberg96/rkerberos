@@ -50,7 +50,7 @@ static size_t rkrb5_typed_size(const void *ptr) {
   return sizeof(RUBY_KRB5);
 }
 
-static const rb_data_type_t rkrb5_data_type = {
+const rb_data_type_t rkrb5_data_type = {
   "RUBY_KRB5",
   {rkrb5_typed_mark, rkrb5_typed_free, rkrb5_typed_size,},
   NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
@@ -826,6 +826,72 @@ static VALUE rkrb5_verify_init_creds(int argc, VALUE* argv, VALUE self){
 
 /*
  * call-seq:
+ *   krb5.get_host_realm(hostname) -> Array
+ *
+ * Returns an array of realm names associated with +hostname+.
+ * Uses the Kerberos library's host-to-realm mapping (krb5.conf
+ * [domain_realm] section, DNS lookups, etc.).
+ */
+static VALUE rkrb5_get_host_realm(VALUE self, VALUE v_host){
+  RUBY_KRB5* ptr;
+  char** realms;
+  char** p;
+  krb5_error_code kerror;
+
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  Check_Type(v_host, T_STRING);
+
+  kerror = krb5_get_host_realm(ptr->ctx, StringValueCStr(v_host), &realms);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_get_host_realm: %s", error_message(kerror));
+
+  VALUE v_array = rb_ary_new();
+
+  for(p = realms; p && *p; p++)
+    rb_ary_push(v_array, rb_str_new2(*p));
+
+  krb5_free_host_realm(ptr->ctx, realms);
+
+  return v_array;
+}
+
+/*
+ * call-seq:
+ *   krb5.expand_hostname(hostname) -> String
+ *
+ * Canonicalizes +hostname+ by performing a forward DNS lookup followed
+ * by a reverse lookup, returning the canonical hostname.
+ */
+static VALUE rkrb5_expand_hostname(VALUE self, VALUE v_host){
+  RUBY_KRB5* ptr;
+  char* canonical;
+  krb5_error_code kerror;
+
+  TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  Check_Type(v_host, T_STRING);
+
+  kerror = krb5_expand_hostname(ptr->ctx, StringValueCStr(v_host), &canonical);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_expand_hostname: %s", error_message(kerror));
+
+  VALUE v_result = rb_str_new2(canonical);
+  krb5_free_string(ptr->ctx, canonical);
+
+  return v_result;
+}
+
+/*
+ * call-seq:
  *   Kerberos::Krb5.thread_safe?
  *
  * Returns true if the Kerberos library was built with multithread support,
@@ -860,6 +926,8 @@ void Init_rkerberos(void){
   rb_define_method(cKrb5, "get_permitted_enctypes", rkrb5_get_permitted_enctypes, 0);
   rb_define_method(cKrb5, "set_default_realm", rkrb5_set_default_realm, -1);
   rb_define_method(cKrb5, "verify_init_creds", rkrb5_verify_init_creds, -1);
+  rb_define_method(cKrb5, "get_host_realm", rkrb5_get_host_realm, 1);
+  rb_define_method(cKrb5, "expand_hostname", rkrb5_expand_hostname, 1);
 
   // Aliases
   rb_define_alias(cKrb5, "default_realm", "get_default_realm");
