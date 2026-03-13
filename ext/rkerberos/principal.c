@@ -298,6 +298,33 @@ static VALUE rkrb5_princ_get_type(VALUE self){
   return INT2FIX(krb5_princ_type(ptr->ctx, ptr->principal));
 }
 
+/*
+ * call-seq:
+ *   principal.components -> Array
+ *
+ * Returns an array of the component strings that make up this principal
+ * name (excluding the realm). For example, "admin/instance@REALM" would
+ * return ["admin", "instance"].
+ */
+static VALUE rkrb5_princ_components(VALUE self){
+  RUBY_KRB5_PRINC* ptr;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_PRINC, &rkrb5_princ_data_type, ptr);
+
+  if(!ptr->principal)
+    rb_raise(cKrb5Exception, "no principal has been established");
+
+  int n = krb5_princ_size(ptr->ctx, ptr->principal);
+  VALUE v_array = rb_ary_new_capa(n);
+
+  for(int i = 0; i < n; i++){
+    krb5_data* component = krb5_princ_component(ptr->ctx, ptr->principal, i);
+    rb_ary_push(v_array, rb_str_new(component->data, component->length));
+  }
+
+  return v_array;
+}
+
 void Init_principal(void){
   /* The Kerberos::Krb5::Principal class encapsulates a Kerberos principal. */
   cKrb5Principal = rb_define_class_under(cKrb5, "Principal", rb_cObject);
@@ -317,6 +344,7 @@ void Init_principal(void){
   rb_define_method(cKrb5Principal, "realm=", rkrb5_princ_set_realm, 1);
   rb_define_method(cKrb5Principal, "==", rkrb5_princ_equal, 1);
   rb_define_method(cKrb5Principal, "principal_type", rkrb5_princ_get_type, 0);
+  rb_define_method(cKrb5Principal, "components", rkrb5_princ_components, 0);
 
   // Attributes
 

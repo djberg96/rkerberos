@@ -133,6 +133,66 @@ static VALUE rkrb5_context_initialize(int argc, VALUE *argv, VALUE self){
   return self;
 }
 
+/*
+ * call-seq:
+ *   context.default_realm -> String
+ *
+ * Returns the default realm from this context.
+ */
+static VALUE rkrb5_context_default_realm(VALUE self){
+  RUBY_KRB5_CONTEXT* ptr;
+  char* realm;
+  krb5_error_code kerror;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  kerror = krb5_get_default_realm(ptr->ctx, &realm);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_get_default_realm: %s", error_message(kerror));
+
+  VALUE v_realm = rb_str_new2(realm);
+  krb5_free_default_realm(ptr->ctx, realm);
+
+  return v_realm;
+}
+
+/*
+ * call-seq:
+ *   context.default_realm = realm
+ *
+ * Sets the default realm for this context. If +realm+ is nil the default
+ * from krb5.conf is restored.
+ */
+static VALUE rkrb5_context_set_default_realm(VALUE self, VALUE v_realm){
+  RUBY_KRB5_CONTEXT* ptr;
+  char* realm;
+  krb5_error_code kerror;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_CONTEXT, &rkrb5_context_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  if(NIL_P(v_realm)){
+    realm = NULL;
+  }
+  else{
+    Check_Type(v_realm, T_STRING);
+    realm = StringValueCStr(v_realm);
+  }
+
+  kerror = krb5_set_default_realm(ptr->ctx, realm);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_set_default_realm: %s", error_message(kerror));
+
+  return v_realm;
+}
+
 void Init_context(void){
   /* The Kerberos::Krb5::Context class encapsulates a Kerberos context. */
   cKrb5Context = rb_define_class_under(cKrb5, "Context", rb_cObject);
@@ -145,4 +205,6 @@ void Init_context(void){
 
   // Instance Methods
   rb_define_method(cKrb5Context, "close", rkrb5_context_close, 0);
+  rb_define_method(cKrb5Context, "default_realm", rkrb5_context_default_realm, 0);
+  rb_define_method(cKrb5Context, "default_realm=", rkrb5_context_set_default_realm, 1);
 }

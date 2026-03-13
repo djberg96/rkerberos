@@ -253,4 +253,53 @@ RSpec.describe Kerberos::Krb5 do
       expect(described_class).to respond_to(:thread_safe?)
     end
   end
+
+  describe '#get_host_realm' do
+    it 'responds to get_host_realm' do
+      expect(krb5).to respond_to(:get_host_realm)
+    end
+
+    it 'returns an array of realm strings' do
+      result = krb5.get_host_realm('localhost')
+      expect(result).to be_a(Array)
+      result.each { |r| expect(r).to be_a(String) }
+    end
+
+    it 'returns a non-empty array for a known hostname' do
+      result = krb5.get_host_realm('localhost')
+      expect(result).not_to be_empty
+    end
+
+    it 'raises TypeError for non-string argument' do
+      expect { krb5.get_host_realm(123) }.to raise_error(TypeError)
+    end
+
+    it 'raises ArgumentError when called without arguments' do
+      expect { krb5.get_host_realm }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe '#expand_hostname' do
+    it 'responds to expand_hostname' do
+      expect(krb5).to respond_to(:expand_hostname)
+    end
+
+    it 'returns a string' do
+      result = krb5.expand_hostname('localhost')
+      expect(result).to be_a(String)
+    end
+
+    it 'returns a non-empty string' do
+      result = krb5.expand_hostname('localhost')
+      expect(result.size).to be > 0
+    end
+
+    it 'raises TypeError for non-string argument' do
+      expect { krb5.expand_hostname(123) }.to raise_error(TypeError)
+    end
+
+    it 'raises ArgumentError when called without arguments' do
+      expect { krb5.expand_hostname }.to raise_error(ArgumentError)
+    end
+  end
 end

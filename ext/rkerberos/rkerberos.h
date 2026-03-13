@@ -8,6 +8,8 @@
 
 // Make the context data type visible to other C files
 extern const rb_data_type_t rkrb5_context_data_type;
+// Make the Krb5 data type visible to other C files
+extern const rb_data_type_t rkrb5_data_type;
 // Make the config data type visible to other C files
 extern const rb_data_type_t rkadm5_config_data_type;
 

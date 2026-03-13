@@ -53,6 +53,52 @@ RSpec.describe Kerberos::Krb5::Context do
     end
   end
 
+  describe '#default_realm' do
+    it 'responds to default_realm' do
+      expect(context).to respond_to(:default_realm)
+    end
+
+    it 'returns a string' do
+      expect(context.default_realm).to be_a(String)
+    end
+
+    it 'returns a non-empty realm' do
+      expect(context.default_realm.size).to be > 0
+    end
+
+    it 'raises when context is closed' do
+      context.close
+      expect { context.default_realm }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
+
+  describe '#default_realm=' do
+    it 'responds to default_realm=' do
+      expect(context).to respond_to(:default_realm=)
+    end
+
+    it 'can set and read back a custom realm' do
+      context.default_realm = 'TEST.REALM'
+      expect(context.default_realm).to eq('TEST.REALM')
+    end
+
+    it 'accepts nil to reset to the default' do
+      original = context.default_realm
+      context.default_realm = 'TEMP.REALM'
+      context.default_realm = nil
+      expect(context.default_realm).to eq(original)
+    end
+
+    it 'raises TypeError for non-string argument' do
+      expect { context.default_realm = 123 }.to raise_error(TypeError)
+    end
+
+    it 'raises when context is closed' do
+      context.close
+      expect { context.default_realm = 'X' }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
+
   after(:each) do
     context.close
   end
