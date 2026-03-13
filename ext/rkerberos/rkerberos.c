@@ -931,7 +931,12 @@ void Init_rkerberos(void){
 
   // Aliases
   rb_define_alias(cKrb5, "default_realm", "get_default_realm");
+  rb_define_alias(cKrb5, "default_realm=", "set_default_realm");
   rb_define_alias(cKrb5, "default_principal", "get_default_principal");
+  rb_define_alias(cKrb5, "host_realm", "get_host_realm");
+  rb_define_alias(cKrb5, "init_creds_password", "get_init_creds_password");
+  rb_define_alias(cKrb5, "init_creds_keytab", "get_init_creds_keytab");
+  rb_define_alias(cKrb5, "permitted_enctypes", "get_permitted_enctypes");
 
   /* 0.3.0: The version of the custom rkerberos library */
   rb_define_const(cKrb5, "VERSION", rb_str_new2("0.3.0"));
