@@ -126,4 +126,36 @@ RSpec.describe Kerberos::Krb5::Principal do
       expect { p.principal_type }.to raise_error(Kerberos::Krb5::Exception, /no principal/)
     end
   end
+
+  describe '#components' do
+    it 'responds to components' do
+      expect(princ).to respond_to(:components)
+    end
+
+    it 'returns an array of strings' do
+      result = princ.components
+      expect(result).to be_a(Array)
+      result.each { |c| expect(c).to be_a(String) }
+    end
+
+    it 'returns one component for a simple principal' do
+      p = described_class.new(name: 'user@EXAMPLE.COM')
+      expect(p.components).to eq(['user'])
+    end
+
+    it 'returns multiple components for a compound principal' do
+      p = described_class.new(name: 'admin/instance@EXAMPLE.COM')
+      expect(p.components).to eq(['admin', 'instance'])
+    end
+
+    it 'returns three components for a three-part principal' do
+      p = described_class.new(name: 'a/b/c@EXAMPLE.COM')
+      expect(p.components).to eq(['a', 'b', 'c'])
+    end
+
+    it 'raises an error when no principal has been established' do
+      p = described_class.new
+      expect { p.components }.to raise_error(Kerberos::Krb5::Exception, /no principal/)
+    end
+  end
 end
