@@ -185,100 +185,182 @@ static VALUE rkrb5_keytab_close(VALUE self){
 }
 
 /*
-static VALUE rkrb5_keytab_remove_entry(int argc, VALUE* argv, VALUE self){
-  RUBY_KRB5_KEYTAB* ptr;
-  krb5_error_code kerror;
-  krb5_keytab_entry entry;
-  char* name;
-  VALUE v_name, v_vno, v_enctype;
-
-  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
-
-  rb_scan_args(argc, argv, "12", &v_name, &v_vno, &v_enctype);
-
-  Check_Type(v_name, T_STRING);
-
-  name = StringValueCStr(v_name);
-
-  if(!ptr->ctx)
-    rb_raise(cKrb5Exception, "no context has been established");
-
-  kerror = krb5_parse_name(ptr->ctx, name, &entry.principal);
-
-  if(kerror)
-    rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
-
-  if(NIL_P(v_vno))
-    entry.vno = 0;
-  else
-    entry.vno = NUM2INT(v_vno);
-
-  if(NIL_P(v_enctype))
-    entry.key.enctype = 0;
-  else
-    entry.key.enctype = NUM2INT(v_enctype);
-
-  entry.key.length = 16;
-
-  kerror = krb5_kt_remove_entry(
-    ptr->ctx,
-    ptr->keytab,
-    &entry
-  );
-
-  if(kerror)
-    rb_raise(cKrb5KeytabException, "krb5_kt_remove_entry: %s", error_message(kerror));
-
-  return self;
-}
-
+ * call-seq:
+ *   keytab.add_entry(principal:, password:, vno: 1, enctype: 18)
+ *
+ * Add a new entry to the keytab for the given +principal+ string.
+ *
+ * A key is derived from +password+ (and the principal-based salt) using
+ * +krb5_c_string_to_key+, so the resulting key will match what the KDC
+ * would generate for the same password.
+ *
+ * Options:
+ *   principal:: A Kerberos principal name string (required).
+ *   password::  The password used to derive the key (required).
+ *   vno::       Key version number (default 1).
+ *   enctype::   Encryption type as an integer (default 18,
+ *               aes256-cts-hmac-sha1-96).
+ *
+ * Returns +self+.
+ */
 static VALUE rkrb5_keytab_add_entry(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5_KEYTAB* ptr;
   krb5_error_code kerror;
   krb5_keytab_entry entry;
-  char* name;
-  VALUE v_name, v_vno, v_enctype;
+  krb5_data pwd_data, salt;
+  VALUE v_opts, v_principal, v_password, v_vno, v_enctype;
 
   TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
-
-  rb_scan_args(argc, argv, "12", &v_name, &v_vno, &v_enctype);
-
-  Check_Type(v_name, T_STRING);
-
-  name = StringValueCStr(v_name);
 
   if(!ptr->ctx)
     rb_raise(cKrb5Exception, "no context has been established");
 
-  kerror = krb5_parse_name(ptr->ctx, name, &entry.principal);
+  rb_scan_args(argc, argv, "0:", &v_opts);
+
+  if(NIL_P(v_opts))
+    rb_raise(rb_eArgError, "principal: and password: are required");
+
+  v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
+  v_password  = rb_hash_aref2(v_opts, ID2SYM(rb_intern("password")));
+  v_vno       = rb_hash_aref2(v_opts, ID2SYM(rb_intern("vno")));
+  v_enctype   = rb_hash_aref2(v_opts, ID2SYM(rb_intern("enctype")));
+
+  if(NIL_P(v_principal))
+    rb_raise(rb_eArgError, "principal: is required");
+
+  if(NIL_P(v_password))
+    rb_raise(rb_eArgError, "password: is required");
+
+  Check_Type(v_principal, T_STRING);
+  Check_Type(v_password, T_STRING);
+
+  memset(&entry, 0, sizeof(entry));
+
+  kerror = krb5_parse_name(ptr->ctx, StringValueCStr(v_principal), &entry.principal);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
 
-  if(NIL_P(v_vno))
-    entry.vno = 0;
-  else
-    entry.vno = NUM2INT(v_vno);
+  entry.vno = NIL_P(v_vno) ? 1 : NUM2INT(v_vno);
+  entry.key.enctype = NIL_P(v_enctype) ? ENCTYPE_AES256_CTS_HMAC_SHA1_96 : NUM2INT(v_enctype);
+  entry.timestamp = time(NULL);
 
-  if(NIL_P(v_enctype))
-    entry.key.enctype = 0;
-  else
-    entry.key.enctype = NUM2INT(v_enctype);
+  // Derive the salt from the principal
+  kerror = krb5_principal2salt(ptr->ctx, entry.principal, &salt);
 
-  entry.key.length = 16;
+  if(kerror){
+    krb5_free_principal(ptr->ctx, entry.principal);
+    rb_raise(cKrb5Exception, "krb5_principal2salt: %s", error_message(kerror));
+  }
 
-  kerror = krb5_kt_add_entry(
-    ptr->ctx,
-    ptr->keytab,
-    &entry
-  );
+  // Derive key from password + salt
+  pwd_data.data   = StringValuePtr(v_password);
+  pwd_data.length = (unsigned int)RSTRING_LEN(v_password);
+
+  kerror = krb5_c_string_to_key(ptr->ctx, entry.key.enctype, &pwd_data, &salt, &entry.key);
+
+  krb5_free_data_contents(ptr->ctx, &salt);
+
+  if(kerror){
+    krb5_free_principal(ptr->ctx, entry.principal);
+    rb_raise(cKrb5Exception, "krb5_c_string_to_key: %s", error_message(kerror));
+  }
+
+  kerror = krb5_kt_add_entry(ptr->ctx, ptr->keytab, &entry);
+
+  krb5_free_keyblock_contents(ptr->ctx, &entry.key);
+  krb5_free_principal(ptr->ctx, entry.principal);
 
   if(kerror)
     rb_raise(cKrb5KeytabException, "krb5_kt_add_entry: %s", error_message(kerror));
 
   return self;
 }
-*/
+
+/*
+ * call-seq:
+ *   keytab.remove_entry(principal:, vno: 0, enctype: 0)
+ *
+ * Remove entries from the keytab that match the given +principal+ string,
+ * +vno+, and +enctype+.
+ *
+ * A +vno+ of 0 (the default) matches any version number.
+ * An +enctype+ of 0 (the default) matches any encryption type.
+ *
+ * When both +vno+ and +enctype+ are 0 (the defaults), all entries for
+ * the +principal+ are removed.
+ *
+ * Options:
+ *   principal:: A Kerberos principal name string (required).
+ *   vno::       Key version number to match, 0 for any (default 0).
+ *   enctype::   Encryption type to match, 0 for any (default 0).
+ *
+ * Returns +self+.
+ */
+static VALUE rkrb5_keytab_remove_entry(int argc, VALUE* argv, VALUE self){
+  RUBY_KRB5_KEYTAB* ptr;
+  krb5_error_code kerror;
+  krb5_keytab_entry found_entry;
+  krb5_principal match_princ;
+  krb5_kvno match_vno;
+  krb5_enctype match_enctype;
+  int removed = 0;
+  VALUE v_opts, v_principal, v_vno, v_enctype;
+
+  TypedData_Get_Struct(self, RUBY_KRB5_KEYTAB, &rkrb5_keytab_data_type, ptr);
+
+  if(!ptr->ctx)
+    rb_raise(cKrb5Exception, "no context has been established");
+
+  rb_scan_args(argc, argv, "0:", &v_opts);
+
+  if(NIL_P(v_opts))
+    rb_raise(rb_eArgError, "principal: is required");
+
+  v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
+  v_vno       = rb_hash_aref2(v_opts, ID2SYM(rb_intern("vno")));
+  v_enctype   = rb_hash_aref2(v_opts, ID2SYM(rb_intern("enctype")));
+
+  if(NIL_P(v_principal))
+    rb_raise(rb_eArgError, "principal: is required");
+
+  Check_Type(v_principal, T_STRING);
+
+  kerror = krb5_parse_name(ptr->ctx, StringValueCStr(v_principal), &match_princ);
+
+  if(kerror)
+    rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
+
+  match_vno = NIL_P(v_vno) ? 0 : NUM2INT(v_vno);
+  match_enctype = NIL_P(v_enctype) ? 0 : NUM2INT(v_enctype);
+
+  // Retrieve the full entry via krb5_kt_get_entry and then pass the
+  // complete struct to krb5_kt_remove_entry so all fields match exactly.
+  // Loop to remove every matching entry when vno/enctype are wildcards.
+  while(1){
+    kerror = krb5_kt_get_entry(
+      ptr->ctx, ptr->keytab, match_princ,
+      match_vno, match_enctype, &found_entry
+    );
+
+    if(kerror){
+      krb5_free_principal(ptr->ctx, match_princ);
+      if(removed)
+        return self;
+      rb_raise(cKrb5KeytabException, "krb5_kt_remove_entry: %s", error_message(kerror));
+    }
+
+    kerror = krb5_kt_remove_entry(ptr->ctx, ptr->keytab, &found_entry);
+    krb5_kt_free_entry(ptr->ctx, &found_entry);
+
+    if(kerror){
+      krb5_free_principal(ptr->ctx, match_princ);
+      rb_raise(cKrb5KeytabException, "krb5_kt_remove_entry: %s", error_message(kerror));
+    }
+
+    removed = 1;
+  }
+}
 
 /*
  * call-seq:
@@ -710,9 +792,8 @@ void Init_keytab(void){
   rb_define_method(cKrb5Keytab, "have_content?", rkrb5_keytab_have_content, 0);
   rb_define_alias(cKrb5Keytab, "clone", "dup");
 
-  // TODO: Move these into Kadm5 and/or figure out how to set the vno properly.
-  // rb_define_method(cKrb5Keytab, "add_entry", rkrb5_keytab_add_entry, -1);
-  // rb_define_method(cKrb5Keytab, "remove_entry", rkrb5_keytab_remove_entry, -1);
+  rb_define_method(cKrb5Keytab, "add_entry", rkrb5_keytab_add_entry, -1);
+  rb_define_method(cKrb5Keytab, "remove_entry", rkrb5_keytab_remove_entry, -1);
 
   // Accessors
 

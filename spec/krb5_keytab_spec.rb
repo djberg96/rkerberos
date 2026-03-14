@@ -286,4 +286,143 @@ RSpec.describe Kerberos::Krb5::Keytab, :kadm5 do
       expect { kt.have_content? }.to raise_error(Kerberos::Krb5::Exception)
     end
   end
+
+  describe '#add_entry' do
+    let(:add_kt_file) { File.join(Dir.tmpdir, 'add_test.keytab') }
+    let(:add_kt_name) { "FILE:#{add_kt_file}" }
+
+    after(:each) { FileUtils.rm_f(add_kt_file) }
+
+    it 'adds an entry that is retrievable via get_entry' do
+      kt = described_class.new(name: add_kt_name)
+      kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret', vno: 1)
+
+      entry = kt.get_entry("testuser1@#{@realm}")
+      expect(entry).to be_a(Kerberos::Krb5::Keytab::Entry)
+      expect(entry.principal).to eq("testuser1@#{@realm}")
+      expect(entry.vno).to eq(1)
+      # default enctype is aes256-cts-hmac-sha1-96 = 18
+      expect(entry.key).to eq(18)
+      kt.close
+    end
+
+    it 'accepts an explicit enctype' do
+      kt = described_class.new(name: add_kt_name)
+      # aes128-cts-hmac-sha1-96 = 17
+      kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret', vno: 2, enctype: 17)
+
+      entry = kt.get_entry("testuser1@#{@realm}", 2, 17)
+      expect(entry.vno).to eq(2)
+      expect(entry.key).to eq(17)
+      kt.close
+    end
+
+    it 'can add multiple entries for the same principal' do
+      kt = described_class.new(name: add_kt_name)
+      kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret', vno: 1, enctype: 18)
+      kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret', vno: 1, enctype: 17)
+
+      entries = []
+      kt.each { |e| entries << e }
+      expect(entries.length).to eq(2)
+      kt.close
+    end
+
+    it 'returns self for chaining' do
+      kt = described_class.new(name: add_kt_name)
+      result = kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret')
+      expect(result).to equal(kt)
+      kt.close
+    end
+
+    it 'raises ArgumentError when principal is missing' do
+      kt = described_class.new(name: add_kt_name)
+      expect { kt.add_entry(password: 'secret') }.to raise_error(ArgumentError)
+      kt.close
+    end
+
+    it 'raises ArgumentError when password is missing' do
+      kt = described_class.new(name: add_kt_name)
+      expect { kt.add_entry(principal: "testuser1@#{@realm}") }.to raise_error(ArgumentError)
+      kt.close
+    end
+
+    it 'raises ArgumentError with no arguments' do
+      kt = described_class.new(name: add_kt_name)
+      expect { kt.add_entry }.to raise_error(ArgumentError)
+      kt.close
+    end
+
+    it 'raises when the keytab is closed' do
+      kt = described_class.new(name: add_kt_name)
+      kt.close
+      expect {
+        kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret')
+      }.to raise_error(Kerberos::Krb5::Exception)
+    end
+  end
+
+  describe '#remove_entry' do
+    let(:rm_kt_file) { File.join(Dir.tmpdir, 'remove_test.keytab') }
+    let(:rm_kt_name) { "FILE:#{rm_kt_file}" }
+
+    before(:each) do
+      @rm_kt = described_class.new(name: rm_kt_name)
+      @rm_kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret', vno: 1, enctype: 18)
+      @rm_kt.add_entry(principal: "testuser1@#{@realm}", password: 'secret', vno: 2, enctype: 17)
+      @rm_kt.add_entry(principal: "testuser2@#{@realm}", password: 'secret', vno: 1, enctype: 18)
+    end
+
+    after(:each) do
+      @rm_kt.close rescue nil
+      FileUtils.rm_f(rm_kt_file)
+    end
+
+    it 'removes all entries for a principal when vno and enctype are defaulted' do
+      @rm_kt.remove_entry(principal: "testuser1@#{@realm}")
+      entries = []
+      @rm_kt.each { |e| entries << e }
+      principals = entries.map(&:principal)
+      expect(principals).not_to include("testuser1@#{@realm}")
+      expect(principals).to include("testuser2@#{@realm}")
+    end
+
+    it 'removes only the entry matching a specific vno' do
+      @rm_kt.remove_entry(principal: "testuser1@#{@realm}", vno: 1)
+      entry = @rm_kt.get_entry("testuser1@#{@realm}")
+      expect(entry.vno).to eq(2)
+    end
+
+    it 'removes only the entry matching a specific enctype' do
+      @rm_kt.remove_entry(principal: "testuser1@#{@realm}", enctype: 17)
+      entry = @rm_kt.get_entry("testuser1@#{@realm}")
+      expect(entry.key).to eq(18)
+    end
+
+    it 'returns self for chaining' do
+      result = @rm_kt.remove_entry(principal: "testuser2@#{@realm}")
+      expect(result).to equal(@rm_kt)
+    end
+
+    it 'raises ArgumentError when principal is missing' do
+      expect { @rm_kt.remove_entry(vno: 1) }.to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError with no arguments' do
+      expect { @rm_kt.remove_entry }.to raise_error(ArgumentError)
+    end
+
+    it 'raises when the keytab is closed' do
+      @rm_kt.close
+      expect {
+        @rm_kt.remove_entry(principal: "testuser1@#{@realm}")
+      }.to raise_error(Kerberos::Krb5::Exception)
+    end
+
+    it 'raises for a non-existent entry' do
+      expect {
+        @rm_kt.remove_entry(principal: "nobody@#{@realm}")
+      }.to raise_error(Kerberos::Krb5::Keytab::Exception)
+    end
+  end
 end
