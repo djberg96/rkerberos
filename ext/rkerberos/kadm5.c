@@ -310,36 +310,62 @@ static VALUE rkadm5_set_pwexpire(VALUE self, VALUE v_user, VALUE v_pwexpire){
 
 /*
  * call-seq:
- *   kadm5.create_principal(name, password, db_args=nil)
- *   kadm5.create_principal(principal)
+ *   kadm5.create_principal(name:, password:, db_args: nil)
+ *   kadm5.create_principal(principal:, password:, db_args: nil)
  *
- * Creates a new principal +name+ with an initial password of +password+.
- * +db_args+ is an optional string or array of strings containing options that are usually
- * passed to add_principal with the -x option. For a list of options, see the kadmin manpage,
- * in the add_principal section.
- *--
- * TODO: Allow a Principal object to be passed in as an argument.
+ * Creates a new principal with an initial password of +password+.
+ *
+ * The principal may be specified either as a +name+ string or as a
+ * +principal+ object (a Kerberos::Krb5::Principal). When a Principal
+ * object is provided, any non-nil writable attributes on that object
+ * are forwarded to the KDC:
+ *
+ *   * +policy+
+ *   * +expire_time+
+ *   * +password_expiration+
+ *   * +max_life+
+ *   * +max_renewable_life+
+ *   * +attributes+
+ *
+ * +db_args+ is an optional string or array of strings containing options
+ * that are usually passed to add_principal with the -x option. For a
+ * list of options, see the kadmin manpage, in the add_principal section.
  */
 static VALUE rkadm5_create_principal(int argc, VALUE* argv, VALUE self){
   RUBY_KADM5* ptr;
-  char* user;
   char* pass;
   char** db_args;
   int mask;
   kadm5_principal_ent_rec princ;
   krb5_error_code kerror;
-  VALUE v_user, v_pass, v_db_args;
+  VALUE v_opts, v_name, v_principal, v_pass, v_db_args;
 
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
 
-  rb_scan_args(argc, argv, "21", &v_user, &v_pass, &v_db_args);
-  Check_Type(v_user, T_STRING);
+  rb_scan_args(argc, argv, "0:", &v_opts);
+
+  if(NIL_P(v_opts))
+    rb_raise(rb_eArgError, "name: (or principal:) and password: are required");
+
+  v_name      = rb_hash_aref2(v_opts, ID2SYM(rb_intern("name")));
+  v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
+  v_pass      = rb_hash_aref2(v_opts, ID2SYM(rb_intern("password")));
+  v_db_args   = rb_hash_aref2(v_opts, ID2SYM(rb_intern("db_args")));
+
+  if(NIL_P(v_pass))
+    rb_raise(rb_eArgError, "password: is required");
+
   Check_Type(v_pass, T_STRING);
+
+  if(NIL_P(v_name) && NIL_P(v_principal))
+    rb_raise(rb_eArgError, "name: or principal: is required");
+
+  if(RTEST(v_name) && RTEST(v_principal))
+    rb_raise(rb_eArgError, "name: and principal: are mutually exclusive");
 
   memset(&princ, 0, sizeof(princ));
 
   mask = KADM5_PRINCIPAL | KADM5_TL_DATA;
-  user = StringValueCStr(v_user);
   pass = StringValueCStr(v_pass);
 
   db_args = parse_db_args(v_db_args);
@@ -349,11 +375,74 @@ static VALUE rkadm5_create_principal(int argc, VALUE* argv, VALUE self){
   if(!ptr->ctx)
     rb_raise(cKadm5Exception, "no context has been established");
 
-  kerror = krb5_parse_name(ptr->ctx, user, &princ.principal);
+  // Determine the principal name and populate mask from the principal object
+  if(RTEST(v_principal)){
+    VALUE v_princ_name, v_policy, v_expire, v_pw_expire, v_max_life, v_max_renew, v_attrs;
 
-  if(kerror){
-    free_tl_data(princ.tl_data);
-    rb_raise(cKadm5Exception, "krb5_parse_name: %s", error_message(kerror));
+    if(!rb_obj_is_kind_of(v_principal, cKrb5Principal))
+      rb_raise(rb_eTypeError, "principal: must be a Kerberos::Krb5::Principal object");
+
+    v_princ_name = rb_iv_get(v_principal, "@principal");
+
+    if(NIL_P(v_princ_name))
+      rb_raise(rb_eArgError, "principal object has no name set");
+
+    Check_Type(v_princ_name, T_STRING);
+
+    kerror = krb5_parse_name(ptr->ctx, StringValueCStr(v_princ_name), &princ.principal);
+
+    if(kerror){
+      free_tl_data(princ.tl_data);
+      rb_raise(cKadm5Exception, "krb5_parse_name: %s", error_message(kerror));
+    }
+
+    // Forward optional attributes from the Principal object
+    v_policy = rb_iv_get(v_principal, "@policy");
+    if(RTEST(v_policy)){
+      Check_Type(v_policy, T_STRING);
+      princ.policy = StringValueCStr(v_policy);
+      mask |= KADM5_POLICY;
+    }
+
+    v_expire = rb_iv_get(v_principal, "@expire_time");
+    if(RTEST(v_expire)){
+      princ.princ_expire_time = (krb5_timestamp)NUM2LONG(rb_funcall(v_expire, rb_intern("to_i"), 0));
+      mask |= KADM5_PRINC_EXPIRE_TIME;
+    }
+
+    v_pw_expire = rb_iv_get(v_principal, "@password_expiration");
+    if(RTEST(v_pw_expire)){
+      princ.pw_expiration = (krb5_timestamp)NUM2LONG(rb_funcall(v_pw_expire, rb_intern("to_i"), 0));
+      mask |= KADM5_PW_EXPIRATION;
+    }
+
+    v_max_life = rb_iv_get(v_principal, "@max_life");
+    if(RTEST(v_max_life)){
+      princ.max_life = NUM2LONG(v_max_life);
+      mask |= KADM5_MAX_LIFE;
+    }
+
+    v_max_renew = rb_iv_get(v_principal, "@max_renewable_life");
+    if(RTEST(v_max_renew)){
+      princ.max_renewable_life = NUM2LONG(v_max_renew);
+      mask |= KADM5_MAX_RLIFE;
+    }
+
+    v_attrs = rb_iv_get(v_principal, "@attributes");
+    if(RTEST(v_attrs)){
+      princ.attributes = NUM2LONG(v_attrs);
+      mask |= KADM5_ATTRIBUTES;
+    }
+  }
+  else{
+    Check_Type(v_name, T_STRING);
+
+    kerror = krb5_parse_name(ptr->ctx, StringValueCStr(v_name), &princ.principal);
+
+    if(kerror){
+      free_tl_data(princ.tl_data);
+      rb_raise(cKadm5Exception, "krb5_parse_name: %s", error_message(kerror));
+    }
   }
 
   kerror = kadm5_create_principal(ptr->handle, &princ, mask, pass);
@@ -447,7 +536,7 @@ static VALUE create_principal_from_entry(VALUE v_name, RUBY_KADM5* ptr, kadm5_pr
 
   rb_hash_aset(v_opts, ID2SYM(rb_intern("name")), v_name);
 
-  v_principal = rb_class_new_instance(1, &v_opts, cKrb5Principal);
+  v_principal = rb_class_new_instance_kw(1, &v_opts, cKrb5Principal, RB_PASS_KEYWORDS);
 
   rb_iv_set(v_principal, "@attributes", LONG2FIX(ent->attributes));
   rb_iv_set(v_principal, "@aux_attributes", INT2FIX(ent->aux_attributes));
