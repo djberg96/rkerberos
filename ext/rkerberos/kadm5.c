@@ -121,8 +121,12 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
     if(RTEST(v_password)) auth_count++;
     if(RTEST(v_keytab))   auth_count++;
     if(RTEST(v_ccache))   auth_count++;
+
     if(auth_count > 1)
       rb_raise(rb_eArgError, "only one of password, keytab, or ccache may be specified");
+
+    if(auth_count == 0)
+      rb_raise(rb_eArgError, "one of password, keytab, or ccache must be specified");
   }
 
   if(RTEST(v_password)){
