@@ -121,8 +121,8 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
     if(NIL_P(v_principal))
       rb_raise(rb_eArgError, "principal must be specified");
 
-    Check_Type(v_principal, T_STRING);
     Check_Type(v_password, T_STRING);
+    Check_Type(v_principal, T_STRING);
 
     pass = StringValueCStr(v_password);
   }

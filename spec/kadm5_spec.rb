@@ -28,34 +28,43 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
     it 'responds to .new' do
       expect(subject).to respond_to(:new)
     end
+
     it 'works with valid user and password' do
       expect { subject.new(principal: user, password: pass) }.not_to raise_error
     end
+
     it 'works with valid service' do
       expect {
         subject.new(principal: user, password: pass, service: 'kadmin/admin')
       }.not_to raise_error
     end
+
     it 'only accepts a hash argument' do
       expect { subject.new(user) }.to raise_error(TypeError)
       expect { subject.new(1) }.to raise_error(TypeError)
     end
+
     it 'accepts a block and yields itself' do
       expect { subject.new(principal: user, password: pass) {} }.not_to raise_error
       subject.new(principal: user, password: pass) { |kadm5| expect(kadm5).to be_a(subject) }
     end
+
     it 'requires principal to be specified' do
       expect { subject.new({}) }.to raise_error(ArgumentError)
     end
+
     it 'requires principal to be a string' do
-      expect { subject.new(principal: 1) }.to raise_error(TypeError)
+      expect { subject.new(principal: 1, password: pass) }.to raise_error(TypeError)
     end
+
     it 'requires password to be a string' do
       expect { subject.new(principal: user, password: 1) }.to raise_error(TypeError)
     end
+
     it 'requires keytab to be a string or boolean' do
       expect { subject.new(principal: user, keytab: 1) }.to raise_error(TypeError)
     end
+
     it 'requires service to be a string' do
       expect { subject.new(principal: user, password: pass, service: 1) }.to raise_error(TypeError)
     end
