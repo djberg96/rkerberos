@@ -97,9 +97,7 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   TypedData_Get_Struct(self, RUBY_KADM5, &rkadm5_data_type, ptr);
   Check_Type(v_opts, T_HASH);
 
-  // Accept both string and symbol keys
-  v_principal = rb_hash_aref2(v_opts, rb_str_new_cstr("principal"));
-  if (NIL_P(v_principal)) v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
+  v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
 
   // Principal must be specified
   if(NIL_P(v_principal))
@@ -108,12 +106,9 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   Check_Type(v_principal, T_STRING);
   user = StringValueCStr(v_principal);
 
-  v_password = rb_hash_aref2(v_opts, rb_str_new_cstr("password"));
-  if (NIL_P(v_password)) v_password = rb_hash_aref2(v_opts, ID2SYM(rb_intern("password")));
-  v_keytab = rb_hash_aref2(v_opts, rb_str_new_cstr("keytab"));
-  if (NIL_P(v_keytab)) v_keytab = rb_hash_aref2(v_opts, ID2SYM(rb_intern("keytab")));
-  v_ccache = rb_hash_aref2(v_opts, rb_str_new_cstr("ccache"));
-  if (NIL_P(v_ccache)) v_ccache = rb_hash_aref2(v_opts, ID2SYM(rb_intern("ccache")));
+  v_password = rb_hash_aref2(v_opts, ID2SYM(rb_intern("password")));
+  v_keytab = rb_hash_aref2(v_opts, ID2SYM(rb_intern("keytab")));
+  v_ccache = rb_hash_aref2(v_opts, ID2SYM(rb_intern("ccache")));
 
   // Validate mutual exclusivity
   {
@@ -134,8 +129,7 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
     pass = StringValueCStr(v_password);
   }
 
-  v_service = rb_hash_aref2(v_opts, rb_str_new_cstr("service"));
-  if (NIL_P(v_service)) v_service = rb_hash_aref2(v_opts, ID2SYM(rb_intern("service")));
+  v_service = rb_hash_aref2(v_opts, ID2SYM(rb_intern("service")));
 
   if(NIL_P(v_service)){
     service = (char *) "kadmin/admin";
@@ -145,13 +139,10 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
     service = StringValueCStr(v_service);
   }
 
-  v_db_args = rb_hash_aref2(v_opts, rb_str_new_cstr("db_args"));
-  if (NIL_P(v_db_args)) v_db_args = rb_hash_aref2(v_opts, ID2SYM(rb_intern("db_args")));
+  v_db_args = rb_hash_aref2(v_opts, ID2SYM(rb_intern("db_args")));
   ptr->db_args = parse_db_args(v_db_args);
 
-  // Check for an optional context keyword argument
-  v_context = rb_hash_aref2(v_opts, rb_str_new_cstr("context"));
-  if (NIL_P(v_context)) v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
+  v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
 
   // Initialize or borrow the context
   if(RTEST(v_context)){
