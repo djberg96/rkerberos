@@ -73,6 +73,68 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
       ctx.close
       expect { subject.new(principal: user, password: pass, context: ctx) }.to raise_error(Kerberos::Krb5::Exception)
     end
+
+    context 'with a credentials cache' do
+      let(:krb5) { Kerberos::Krb5.new }
+      let(:ccache_path) { "/tmp/test_kadm5_ccache_#{Process.pid}" }
+      let(:ccache_name) { "FILE:#{ccache_path}" }
+      let(:ccache) { Kerberos::Krb5::CredentialsCache.new(cache_name: ccache_name) }
+
+      before(:each) do
+        krb5.get_init_creds_password(user, pass)
+        krb5.verify_init_creds(nil, nil, ccache)
+      end
+
+      after(:each) do
+        ccache.close rescue nil
+        krb5.close rescue nil
+        File.delete(ccache_path) rescue nil
+      end
+
+      it 'works with a populated credentials cache' do
+        expect { subject.new(principal: user, ccache: ccache) }.not_to raise_error
+      end
+
+      it 'returns a Kadm5 object' do
+        kadm5 = subject.new(principal: user, ccache: ccache)
+        expect(kadm5).to be_a(subject)
+        kadm5.close
+      end
+
+      it 'can perform operations after ccache authentication' do
+        kadm5 = subject.new(principal: user, ccache: ccache)
+        privs = kadm5.get_privileges
+        expect(privs).to be_a(Integer)
+        expect(privs).not_to eq(0)
+        kadm5.close
+      end
+
+      it 'raises TypeError if ccache is not a CredentialsCache' do
+        expect {
+          subject.new(principal: user, ccache: "not_a_ccache")
+        }.to raise_error(TypeError)
+      end
+
+      it 'raises an error for a destroyed credentials cache' do
+        dead_ccache = Kerberos::Krb5::CredentialsCache.new
+        dead_ccache.destroy
+        expect {
+          subject.new(principal: user, ccache: dead_ccache)
+        }.to raise_error(Kerberos::Krb5::Exception)
+      end
+
+      it 'raises ArgumentError when both password and ccache are given' do
+        expect {
+          subject.new(principal: user, password: pass, ccache: ccache)
+        }.to raise_error(ArgumentError)
+      end
+
+      it 'raises ArgumentError when both keytab and ccache are given' do
+        expect {
+          subject.new(principal: user, keytab: true, ccache: ccache)
+        }.to raise_error(ArgumentError)
+      end
+    end
   end
 
   describe '#get_privileges' do

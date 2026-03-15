@@ -60,26 +60,33 @@ static VALUE rkadm5_allocate(VALUE klass){
  *   Kerberos::Kadm5.new(:principal => 'name', :password => 'xxxxx')
  *   Kerberos::Kadm5.new(:principal => 'name', :keytab => '/path/to/your/keytab')
  *   Kerberos::Kadm5.new(:principal => 'name', :keytab => true)
+ *   Kerberos::Kadm5.new(:principal => 'name', :ccache => ccache_object)
  *
  * Creates and returns a new Kerberos::Kadm5 object. A hash argument is
  * accepted that allows you to specify a principal and a password, or
- * a keytab file.
+ * a keytab file, or a credentials cache.
  *
  * If you pass a string as the :keytab value it will attempt to use that file
  * for the keytab. If you pass true as the value it will attempt to use the
  * default keytab file, typically /etc/krb5.keytab.
+ *
+ * If you pass a Kerberos::Krb5::CredentialsCache object as the :ccache value,
+ * it will authenticate using the credentials stored in that cache via
+ * kadm5_init_with_creds.
  *
  * You may also pass the :service option to specify the service name. The
  * default is kadmin/admin.
  *
  * There is also a :db_args option, which is a single string or array of strings
  * containing options usually passed to kadmin with the -x switch. For a list of
- * available options, see the kadmin manpage
+ * available options, see the kadmin manpage.
+ *
+ * Only one of :password, :keytab, or :ccache may be specified.
  *
  */
 static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   RUBY_KADM5* ptr;
-  VALUE v_principal, v_password, v_keytab, v_service, v_db_args, v_context;
+  VALUE v_principal, v_password, v_keytab, v_service, v_db_args, v_context, v_ccache;
   char* user;
   char* pass = NULL;
   char* keytab = NULL;
@@ -105,9 +112,18 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   if (NIL_P(v_password)) v_password = rb_hash_aref2(v_opts, ID2SYM(rb_intern("password")));
   v_keytab = rb_hash_aref2(v_opts, rb_str_new_cstr("keytab"));
   if (NIL_P(v_keytab)) v_keytab = rb_hash_aref2(v_opts, ID2SYM(rb_intern("keytab")));
+  v_ccache = rb_hash_aref2(v_opts, rb_str_new_cstr("ccache"));
+  if (NIL_P(v_ccache)) v_ccache = rb_hash_aref2(v_opts, ID2SYM(rb_intern("ccache")));
 
-  if(RTEST(v_password) && RTEST(v_keytab))
-    rb_raise(rb_eArgError, "cannot use both a password and a keytab");
+  // Validate mutual exclusivity
+  {
+    int auth_count = 0;
+    if(RTEST(v_password)) auth_count++;
+    if(RTEST(v_keytab))   auth_count++;
+    if(RTEST(v_ccache))   auth_count++;
+    if(auth_count > 1)
+      rb_raise(rb_eArgError, "only one of password, keytab, or ccache may be specified");
+  }
 
   if(RTEST(v_password)){
     Check_Type(v_password, T_STRING);
@@ -205,8 +221,31 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
     if(kerror)
       rb_raise(cKadm5Exception, "kadm5_init_with_skey: %s", error_message(kerror));
   }
-  else{
-    // TODO: Credentials cache.
+  else if(RTEST(v_ccache)){
+    RUBY_KRB5_CCACHE* cc_ptr;
+
+    if(!rb_obj_is_kind_of(v_ccache, cKrb5CCache))
+      rb_raise(rb_eTypeError, "ccache must be a Kerberos::Krb5::CredentialsCache object");
+
+    TypedData_Get_Struct(v_ccache, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, cc_ptr);
+
+    if(!cc_ptr->ccache)
+      rb_raise(cKrb5Exception, "credentials cache is closed or destroyed");
+
+    kerror = kadm5_init_with_creds(
+      ptr->ctx,
+      user,
+      cc_ptr->ccache,
+      service,
+      NULL,
+      KADM5_STRUCT_VERSION,
+      KADM5_API_VERSION_3,
+      ptr->db_args,
+      &ptr->handle
+    );
+
+    if(kerror)
+      rb_raise(cKadm5Exception, "kadm5_init_with_creds: %s", error_message(kerror));
   }
 
   if(rb_block_given_p()){
