@@ -3,6 +3,7 @@
 
 require 'spec_helper'
 require 'socket'
+require 'fileutils'
 
 RSpec.describe 'Kerberos::Kadm5', :kadm5 do
   let(:server){ Kerberos::Kadm5::Config.new.admin_server }
@@ -88,7 +89,7 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
       after(:each) do
         ccache.close rescue nil
         krb5.close rescue nil
-        File.delete(ccache_path) rescue nil
+        FileUtils.rm_f([ccache_path, "#{ccache_path}.lock"])
       end
 
       it 'works with a populated credentials cache' do
