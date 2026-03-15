@@ -98,14 +98,6 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
   Check_Type(v_opts, T_HASH);
 
   v_principal = rb_hash_aref2(v_opts, ID2SYM(rb_intern("principal")));
-
-  // Principal must be specified
-  if(NIL_P(v_principal))
-    rb_raise(rb_eArgError, "principal must be specified");
-
-  Check_Type(v_principal, T_STRING);
-  user = StringValueCStr(v_principal);
-
   v_password = rb_hash_aref2(v_opts, ID2SYM(rb_intern("password")));
   v_keytab = rb_hash_aref2(v_opts, ID2SYM(rb_intern("keytab")));
   v_ccache = rb_hash_aref2(v_opts, ID2SYM(rb_intern("ccache")));
@@ -124,11 +116,34 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
       rb_raise(rb_eArgError, "one of password, keytab, or ccache must be specified");
   }
 
+  // Principal must be specified if using a password
   if(RTEST(v_password)){
+    if(NIL_P(v_principal))
+      rb_raise(rb_eArgError, "principal must be specified");
+
+    Check_Type(v_principal, T_STRING);
     Check_Type(v_password, T_STRING);
+
     pass = StringValueCStr(v_password);
   }
 
+  // Prefer primary_principal if not nil, else principal
+  if(RTEST(v_ccache) && NIL_P(v_principal)) {
+    v_principal = rb_funcall(v_ccache, rb_intern("primary_principal"), 0);
+
+    if(NIL_P(v_principal))
+      v_principal = rb_funcall(v_ccache, rb_intern("principal"), 0);
+  }
+
+  // For a keytab use the first entry's principal
+  if(RTEST(v_keytab) && NIL_P(v_principal)) {
+    VALUE v_enum, v_first;
+    v_enum = rb_funcall(v_keytab, rb_intern("each"), 0);
+    v_first = rb_funcall(v_enum, rb_intern("first"), 0);
+    v_principal = rb_iv_get(v_first, "@principal");
+  }
+
+  user = StringValueCStr(v_principal);
   v_service = rb_hash_aref2(v_opts, ID2SYM(rb_intern("service")));
 
   if(NIL_P(v_service)){
@@ -432,6 +447,7 @@ static VALUE rkadm5_create_principal(int argc, VALUE* argv, VALUE self){
 
     // Forward optional attributes from the Principal object
     v_policy = rb_iv_get(v_principal, "@policy");
+
     if(RTEST(v_policy)){
       Check_Type(v_policy, T_STRING);
       princ.policy = StringValueCStr(v_policy);
@@ -439,30 +455,35 @@ static VALUE rkadm5_create_principal(int argc, VALUE* argv, VALUE self){
     }
 
     v_expire = rb_iv_get(v_principal, "@expire_time");
+
     if(RTEST(v_expire)){
       princ.princ_expire_time = (krb5_timestamp)NUM2LONG(rb_funcall(v_expire, rb_intern("to_i"), 0));
       mask |= KADM5_PRINC_EXPIRE_TIME;
     }
 
     v_pw_expire = rb_iv_get(v_principal, "@password_expiration");
+
     if(RTEST(v_pw_expire)){
       princ.pw_expiration = (krb5_timestamp)NUM2LONG(rb_funcall(v_pw_expire, rb_intern("to_i"), 0));
       mask |= KADM5_PW_EXPIRATION;
     }
 
     v_max_life = rb_iv_get(v_principal, "@max_life");
+
     if(RTEST(v_max_life)){
       princ.max_life = NUM2LONG(v_max_life);
       mask |= KADM5_MAX_LIFE;
     }
 
     v_max_renew = rb_iv_get(v_principal, "@max_renewable_life");
+
     if(RTEST(v_max_renew)){
       princ.max_renewable_life = NUM2LONG(v_max_renew);
       mask |= KADM5_MAX_RLIFE;
     }
 
     v_attrs = rb_iv_get(v_principal, "@attributes");
+
     if(RTEST(v_attrs)){
       princ.attributes = NUM2LONG(v_attrs);
       mask |= KADM5_ATTRIBUTES;
