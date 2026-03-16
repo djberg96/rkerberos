@@ -182,7 +182,7 @@ static VALUE rkrb5_set_default_realm(int argc, VALUE* argv, VALUE self){
 }
 
 /* call-seq:
- *   krb5.get_init_creds_keytab(principal = nil, keytab = nil, service = nil, ccache = nil)
+ *   krb5.get_init_creds_keytab(principal: nil, keytab: nil, service: nil, ccache: nil)
  *
  * Acquire credentials for +principal+ from +keytab+ using +service+. If
  * no principal is specified, then a principal is derived from the service
@@ -196,7 +196,8 @@ static VALUE rkrb5_set_default_realm(int argc, VALUE* argv, VALUE self){
  */
 static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5* ptr;
-  VALUE v_user, v_keytab_name, v_service, v_ccache;
+  VALUE v_user = Qnil, v_keytab_name = Qnil, v_service = Qnil, v_ccache = Qnil;
+  VALUE v_kwargs = Qnil;
   char* user;
   char* service;
   char keytab_name[MAX_KEYTAB_NAME_LEN];
@@ -223,7 +224,18 @@ static VALUE rkrb5_get_init_creds_keytab(int argc, VALUE* argv, VALUE self){
   krb5_free_cred_contents(ptr->ctx, &ptr->creds);
   memset(&ptr->creds, 0, sizeof(ptr->creds));
 
-  rb_scan_args(argc, argv, "04", &v_user, &v_keytab_name, &v_service, &v_ccache);
+  rb_scan_args(argc, argv, "04:", &v_user, &v_keytab_name, &v_service, &v_ccache, &v_kwargs);
+
+  if(!NIL_P(v_kwargs)){
+    ID kw_table[4] = { rb_intern("principal"), rb_intern("keytab"), rb_intern("service"), rb_intern("ccache") };
+    VALUE kw_vals[4];
+
+    rb_get_kwargs(v_kwargs, kw_table, 0, 4, kw_vals);
+    if(kw_vals[0] != Qundef) v_user = kw_vals[0];
+    if(kw_vals[1] != Qundef) v_keytab_name = kw_vals[1];
+    if(kw_vals[2] != Qundef) v_service = kw_vals[2];
+    if(kw_vals[3] != Qundef) v_ccache = kw_vals[3];
+  }
 
   // Validate argument types before allocating opt, so type errors don't leak it.
   if(!NIL_P(v_user))

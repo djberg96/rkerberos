@@ -23,8 +23,8 @@ puts cc.primary_principal
 
 # Keytab
 kt_name = Kerberos::Krb5::Keytab.new.default_name # e.g. "FILE:/etc/krb5.keytab"
-krb.get_init_creds_keytab('host/server.example.com', kt_name)
-krb.get_init_creds_keytab('host/server.example.com', kt_name, nil, cc) # or write to cache
+krb.get_init_creds_keytab(principal: 'host/server.example.com', keytab: kt_name)
+krb.get_init_creds_keytab(principal: 'host/server.example.com', keytab: kt_name, ccache: cc) # or write to cache
 
 # Admin
 Kerberos::Kadm5.new(principal: ENV['KRB5_ADMIN_PRINCIPAL'], password: ENV['KRB5_ADMIN_PASSWORD']) do |kadmin|

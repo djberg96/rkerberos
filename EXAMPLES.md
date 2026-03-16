@@ -101,17 +101,17 @@ krb5.close
 krb5 = Kerberos::Krb5.new
 
 # Using the default keytab (/etc/krb5.keytab)
-krb5.get_init_creds_keytab('host/server.example.com')
+krb5.get_init_creds_keytab(principal: 'host/server.example.com')
 
 # Using a specific keytab file
-krb5.get_init_creds_keytab('host/server.example.com', 'FILE:/etc/app.keytab')
+krb5.get_init_creds_keytab(principal: 'host/server.example.com', keytab: 'FILE:/etc/app.keytab')
 
 # With a specific service name
-krb5.get_init_creds_keytab('host/server.example.com', nil, 'host')
+krb5.get_init_creds_keytab(principal: 'host/server.example.com', service: 'host')
 
 # Store the resulting credentials in a cache
 cc = Kerberos::Krb5::CredentialsCache.new
-krb5.get_init_creds_keytab('host/server.example.com', nil, nil, cc)
+krb5.get_init_creds_keytab(principal: 'host/server.example.com', ccache: cc)
 
 krb5.close
 ```
