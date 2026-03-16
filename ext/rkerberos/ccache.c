@@ -273,11 +273,6 @@ static VALUE rkrb5_ccache_primary_principal(VALUE self){
   return v_name;
 }
 
-// Simple wrapper around krb5_cc_get_principal returning a principal name string.
-static VALUE rkrb5_ccache_principal(VALUE self){
-  return rkrb5_ccache_primary_principal(self);
-}
-
 /*
  * call-seq:
  *   ccache.destroy
@@ -422,11 +417,11 @@ void Init_ccache(void){
   rb_define_method(cKrb5CCache, "cache_type", rkrb5_ccache_get_type, 0);
   rb_define_method(cKrb5CCache, "destroy", rkrb5_ccache_destroy, 0);
   rb_define_method(cKrb5CCache, "primary_principal", rkrb5_ccache_primary_principal, 0);
-  rb_define_method(cKrb5CCache, "principal", rkrb5_ccache_principal, 0);
   rb_define_method(cKrb5CCache, "full_name", rkrb5_ccache_full_name, 0);
   rb_define_method(cKrb5CCache, "dup", rkrb5_ccache_dup, 0);
   rb_define_alias(cKrb5CCache, "clone", "dup");
 
   // Aliases
   rb_define_alias(cKrb5CCache, "delete", "destroy");
+  rb_define_alias(cKrb5CCache, "principal", "primary_principal");
 }
