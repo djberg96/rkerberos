@@ -128,12 +128,12 @@ krb5.get_init_creds_password('user@EXAMPLE.COM', 's3cret')
 krb5.verify_init_creds
 
 # Verify against a specific server principal
-krb5.verify_init_creds('host/server.example.com@EXAMPLE.COM')
+krb5.verify_init_creds(server: 'host/server.example.com@EXAMPLE.COM')
 
 # Verify using a specific keytab and store results in a credential cache
 keytab = Kerberos::Krb5::Keytab.new
 cc = Kerberos::Krb5::CredentialsCache.new
-krb5.verify_init_creds(nil, keytab, cc)
+krb5.verify_init_creds(keytab: keytab, ccache: cc)
 puts cc.primary_principal  # => "user@EXAMPLE.COM"
 
 krb5.close
@@ -328,7 +328,7 @@ krb5 = Kerberos::Krb5.new
 cc = Kerberos::Krb5::CredentialsCache.new
 
 krb5.get_init_creds_password('user@EXAMPLE.COM', 's3cret')
-krb5.verify_init_creds(nil, nil, cc)
+krb5.verify_init_creds(ccache: cc)
 
 puts cc.primary_principal  # => "user@EXAMPLE.COM"
 

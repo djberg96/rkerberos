@@ -18,7 +18,7 @@ puts krb.get_permitted_enctypes.keys.join(',')
 
 # Credentials cache
 cc = Kerberos::Krb5::CredentialsCache.new
-krb.verify_init_creds(nil, nil, cc)
+krb.verify_init_creds(ccache: cc)
 puts cc.primary_principal
 
 # Keytab
