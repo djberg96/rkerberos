@@ -99,24 +99,24 @@ RSpec.describe Kerberos::Krb5 do
     end
 
     it 'verifies credentials obtained via password' do
-      krb5.get_init_creds_password(user, 'changeme')
+      krb5.get_init_creds_password(principal: user, password: 'changeme')
       expect(krb5.verify_init_creds).to be true
     end
 
     it 'accepts a server principal string' do
-      krb5.get_init_creds_password(user, 'changeme')
+      krb5.get_init_creds_password(principal: user, password: 'changeme')
       expect(krb5.verify_init_creds(server: "kadmin/admin@#{@realm}")).to be true
     end
 
     it 'accepts a Keytab object' do
-      krb5.get_init_creds_password(user, 'changeme')
+      krb5.get_init_creds_password(principal: user, password: 'changeme')
       kt = Kerberos::Krb5::Keytab.new
       expect(krb5.verify_init_creds(keytab: kt)).to be true
     end
 
     it 'stores additional credentials in provided CredentialsCache' do
       ccache = Kerberos::Krb5::CredentialsCache.new
-      krb5.get_init_creds_password(user, 'changeme')
+      krb5.get_init_creds_password(principal: user, password: 'changeme')
       expect(krb5.verify_init_creds(ccache: ccache)).to be true
       expect(ccache.primary_principal).to be_a(String)
       expect(ccache.primary_principal).to include('@')
@@ -174,16 +174,16 @@ RSpec.describe Kerberos::Krb5 do
     end
 
     it 'changes the password successfully' do
-      krb5.get_init_creds_password(user, 'changeme')
+      krb5.get_init_creds_password(principal: user, password: 'changeme')
       expect(krb5.change_password('changeme', 'Newpass99!')).to be true
       # Verify we can authenticate with the new password
       krb5_check = described_class.new
-      expect(krb5_check.get_init_creds_password(user, 'Newpass99!')).to be true
+      expect(krb5_check.get_init_creds_password(principal: user, password: 'Newpass99!')).to be true
       krb5_check.close
     end
 
     it 'raises with a meaningful message when the old password is wrong' do
-      krb5.get_init_creds_password(user, 'changeme')
+      krb5.get_init_creds_password(principal: user, password: 'changeme')
       expect {
         krb5.change_password('wrongpass', 'Newpass99!')
       }.to raise_error(Kerberos::Krb5::Exception, /krb5_(get_init_creds_password|change_password)/)
@@ -200,7 +200,7 @@ RSpec.describe Kerberos::Krb5 do
       let(:compliant_pw) { 'Changeme1!' }
 
       it 'raises an exception with the KDC rejection reason' do
-        krb5.get_init_creds_password(policy_user, compliant_pw)
+        krb5.get_init_creds_password(principal: policy_user, password: compliant_pw)
         expect {
           krb5.change_password(compliant_pw, 'a')
         }.to raise_error(Kerberos::Krb5::Exception, /krb5_change_password/)
