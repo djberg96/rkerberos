@@ -744,7 +744,7 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
 
 /*
  * call-seq:
- *   krb5.verify_init_creds(server = nil, keytab = nil, ccache = nil)
+ *   krb5.verify_init_creds(server: nil, keytab: nil, ccache: nil)
  *
  * Verifies the initial credentials currently stored in the internal
  * credentials structure. Optionally a server principal string, a
@@ -754,7 +754,8 @@ static VALUE rkrb5_get_permitted_enctypes(VALUE self){
  */
 static VALUE rkrb5_verify_init_creds(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5* ptr;
-  VALUE v_server, v_keytab, v_ccache;
+  VALUE v_server = Qnil, v_keytab = Qnil, v_ccache = Qnil;
+  VALUE v_kwargs = Qnil;
   krb5_error_code kerror;
   krb5_principal server_princ = NULL;
   RUBY_KRB5_KEYTAB* ktptr = NULL;
@@ -762,7 +763,17 @@ static VALUE rkrb5_verify_init_creds(int argc, VALUE* argv, VALUE self){
   krb5_keytab keytab = NULL;
   krb5_ccache *ccache_ptr = NULL;
 
-  rb_scan_args(argc, argv, "03", &v_server, &v_keytab, &v_ccache);
+  rb_scan_args(argc, argv, "03:", &v_server, &v_keytab, &v_ccache, &v_kwargs);
+
+  if(!NIL_P(v_kwargs)){
+    ID kw_table[3] = { rb_intern("server"), rb_intern("keytab"), rb_intern("ccache") };
+    VALUE kw_vals[3];
+
+    rb_get_kwargs(v_kwargs, kw_table, 0, 3, kw_vals);
+    if(kw_vals[0] != Qundef) v_server = kw_vals[0];
+    if(kw_vals[1] != Qundef) v_keytab = kw_vals[1];
+    if(kw_vals[2] != Qundef) v_ccache = kw_vals[2];
+  }
 
   TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
