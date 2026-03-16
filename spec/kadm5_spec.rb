@@ -92,7 +92,7 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
 
       before(:each) do
         krb5.get_init_creds_password(user, pass)
-        krb5.verify_init_creds(ccache: cache, server: 'kadmin/kadmin@EXAMPLE.COM')
+        krb5.verify_init_creds(ccache: cache)
       end
 
       after(:each) do
