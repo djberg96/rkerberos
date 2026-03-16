@@ -230,14 +230,14 @@ RSpec.describe Kerberos::Krb5 do
 
     it 'acquires credentials for a principal from a supplied keytab file' do
       kt_name = "FILE:#{@kt_file}"
-      expect { krb5.get_init_creds_keytab(user, kt_name) }.not_to raise_error
+      expect { krb5.get_init_creds_keytab(principal: user, keytab: kt_name) }.not_to raise_error
       expect(krb5.verify_init_creds).to be true
     end
 
     it 'accepts a CredentialsCache to receive credentials' do
       ccache = Kerberos::Krb5::CredentialsCache.new
       kt_name = "FILE:#{@kt_file}"
-      expect { krb5.get_init_creds_keytab(user, kt_name, nil, ccache) }.not_to raise_error
+      expect { krb5.get_init_creds_keytab(principal: user, keytab: kt_name, ccache: ccache) }.not_to raise_error
       expect(ccache.primary_principal).to be_a(String)
       expect(ccache.primary_principal).to include('@')
     end
