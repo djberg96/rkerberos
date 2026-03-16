@@ -70,10 +70,10 @@ krb5.close
 krb5 = Kerberos::Krb5.new
 
 # Basic password authentication
-krb5.get_init_creds_password('user@EXAMPLE.COM', 's3cret')
+krb5.get_init_creds_password(principal: 'user@EXAMPLE.COM', password: 's3cret')
 
 # With an explicit service
-krb5.get_init_creds_password('user@EXAMPLE.COM', 's3cret', 'krbtgt/EXAMPLE.COM')
+krb5.get_init_creds_password(principal: 'user@EXAMPLE.COM', password: 's3cret', service: 'krbtgt/EXAMPLE.COM')
 
 krb5.close
 ```
@@ -122,7 +122,7 @@ After acquiring credentials, you can explicitly verify them against the KDC:
 
 ```ruby
 krb5 = Kerberos::Krb5.new
-krb5.get_init_creds_password('user@EXAMPLE.COM', 's3cret')
+krb5.get_init_creds_password(principal: 'user@EXAMPLE.COM', password: 's3cret')
 
 # Basic verification
 krb5.verify_init_creds
@@ -145,7 +145,7 @@ krb5.close
 krb5 = Kerberos::Krb5.new
 
 # First authenticate the user
-krb5.get_init_creds_password('user@EXAMPLE.COM', 'old_password')
+krb5.get_init_creds_password(principal: 'user@EXAMPLE.COM', password: 'old_password')
 
 # Then change the password
 krb5.change_password('old_password', 'new_password')

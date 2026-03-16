@@ -432,19 +432,24 @@ static VALUE rkrb5_change_password(VALUE self, VALUE v_old, VALUE v_new){
 
 /*
  * call-seq:
- *   krb5.get_init_creds_password(user, password, service = nil)
+ *   krb5.get_init_creds_password(principal: nil, password: nil, service: nil, ccache: nil)
  *
- * Authenticates the credentials of +user+ using +password+ against +service+,
+ * Authenticates the credentials of +principal+ using +password+ against +service+,
  * and has the effect of setting the principal and context internally. This method
  * must typically be called before using other methods.
+ *
+ * When +ccache+ is given, the acquired credentials will be written into the
+ * provided Kerberos::Krb5::CredentialsCache.
  */
 static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
   RUBY_KRB5* ptr;
-  VALUE v_user, v_pass, v_service;
+  VALUE v_user = Qnil, v_pass = Qnil, v_service = Qnil, v_ccache = Qnil;
+  VALUE v_kwargs = Qnil;
   char* user;
   char* pass;
   char* service;
   krb5_error_code kerror;
+  krb5_get_init_creds_opt* opt = NULL;
 
   TypedData_Get_Struct(self, RUBY_KRB5, &rkrb5_data_type, ptr);
 
@@ -460,7 +465,21 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
   krb5_free_cred_contents(ptr->ctx, &ptr->creds);
   memset(&ptr->creds, 0, sizeof(ptr->creds));
 
-  rb_scan_args(argc, argv, "21", &v_user, &v_pass, &v_service);
+  rb_scan_args(argc, argv, "04:", &v_user, &v_pass, &v_service, &v_ccache, &v_kwargs);
+
+  if(!NIL_P(v_kwargs)){
+    ID kw_table[4] = { rb_intern("principal"), rb_intern("password"), rb_intern("service"), rb_intern("ccache") };
+    VALUE kw_vals[4];
+
+    rb_get_kwargs(v_kwargs, kw_table, 0, 4, kw_vals);
+    if(kw_vals[0] != Qundef) v_user = kw_vals[0];
+    if(kw_vals[1] != Qundef) v_pass = kw_vals[1];
+    if(kw_vals[2] != Qundef) v_service = kw_vals[2];
+    if(kw_vals[3] != Qundef) v_ccache = kw_vals[3];
+  }
+
+  if(NIL_P(v_user) || NIL_P(v_pass))
+    rb_raise(rb_eArgError, "principal and password are required");
 
   Check_Type(v_user, T_STRING);
   Check_Type(v_pass, T_STRING);
@@ -480,6 +499,21 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_parse_name: %s", error_message(kerror));
 
+  if(!NIL_P(v_ccache)){
+    RUBY_KRB5_CCACHE* ccptr;
+    TypedData_Get_Struct(v_ccache, RUBY_KRB5_CCACHE, &rkrb5_ccache_data_type, ccptr);
+
+    kerror = krb5_get_init_creds_opt_alloc(ptr->ctx, &opt);
+    if(kerror)
+      rb_raise(cKrb5Exception, "krb5_get_init_creds_opt_alloc: %s", error_message(kerror));
+
+    kerror = krb5_get_init_creds_opt_set_out_ccache(ptr->ctx, opt, ccptr->ccache);
+    if(kerror){
+      krb5_get_init_creds_opt_free(ptr->ctx, opt);
+      rb_raise(cKrb5Exception, "krb5_get_init_creds_opt_set_out_ccache: %s", error_message(kerror));
+    }
+  }
+
   kerror = krb5_get_init_creds_password(
     ptr->ctx,
     &ptr->creds,
@@ -489,8 +523,11 @@ static VALUE rkrb5_get_init_creds_passwd(int argc, VALUE* argv, VALUE self){
     NULL,
     0,
     service,
-    NULL
+    opt
   );
+
+  if(opt)
+    krb5_get_init_creds_opt_free(ptr->ctx, opt);
 
   if(kerror)
     rb_raise(cKrb5Exception, "krb5_get_init_creds_password: %s", error_message(kerror));
