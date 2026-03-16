@@ -50,6 +50,12 @@ RSpec.describe Kerberos::Krb5::CredentialsCache do
       expect { described_class.new(principal: true) }.to raise_error(TypeError)
     end
 
+    it 'accepts Principal objects (duck-typed as #principal)' do
+      obj = Kerberos::Krb5::Principal.new(name: princ)
+      expect { described_class.new(principal: obj) }.not_to raise_error
+      expect(described_class.new(principal: obj).primary_principal).to eq(princ)
+    end
+
     it 'raises error for positional arguments' do
       expect { described_class.new(princ) }.to raise_error(ArgumentError)
     end
