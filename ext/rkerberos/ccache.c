@@ -50,10 +50,13 @@ static VALUE rkrb5_ccache_allocate(VALUE klass){
  *
  * - +principal+: A string principal name. If specified, the credentials cache
  *   is created or refreshed with this as the primary principal. If a cache
- *   already exists, its contents are destroyed.
+ *   already exists, its contents are destroyed. May also be an object that
+ *   responds to the `.principal` method.
+ *
  * - +cache_name+: The name of the credentials cache to use, which must be in
  *   "type:residual" format, where 'type' is a type known to Kerberos
  *   (typically 'FILE'). If omitted, the default cache is used.
+ *
  * - +context+: A Kerberos::Krb5::Context object. If provided, that context is
  *   used instead of creating a new one via krb5_init_context.
  *
@@ -76,8 +79,12 @@ static VALUE rkrb5_ccache_initialize(int argc, VALUE* argv, VALUE self){
   v_name = rb_hash_aref2(v_opts, ID2SYM(rb_intern("cache_name")));
   v_context = rb_hash_aref2(v_opts, ID2SYM(rb_intern("context")));
 
-  if(RTEST(v_principal))
+  if(RTEST(v_principal)){
+    if(rb_respond_to(v_principal, rb_intern("principal")))
+      v_principal = rb_funcall(v_principal, rb_intern("principal"), 0);
+
     Check_Type(v_principal, T_STRING);
+  }
 
   // Initialize or borrow the context
   if(RTEST(v_context)){
