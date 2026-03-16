@@ -127,10 +127,7 @@ static VALUE rkadm5_initialize(VALUE self, VALUE v_opts){
     pass = StringValueCStr(v_password);
   }
 
-  // Prefer primary_principal if not nil, else principal
-  if(RTEST(v_ccache) && NIL_P(v_principal)) {
-    v_principal = rb_funcall(v_ccache, rb_intern("primary_principal"), 0);
-
+  if(RTEST(v_ccache) && NIL_P(v_principal)){
     if(NIL_P(v_principal))
       v_principal = rb_funcall(v_ccache, rb_intern("principal"), 0);
   }
