@@ -84,21 +84,21 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
       expect { subject.new(principal: user, password: pass, context: ctx) }.to raise_error(Kerberos::Krb5::Exception)
     end
 
-    context 'with a credentials cache' do
+    context 'with a credentials cache', :cache do
       let(:krb5) { Kerberos::Krb5.new }
-      let(:ccache_path) { "/tmp/test_kadm5_ccache_#{Process.pid}" }
-      let(:ccache_name) { "FILE:#{ccache_path}" }
-      let(:ccache) { Kerberos::Krb5::CredentialsCache.new(cache_name: ccache_name) }
+      let(:cache_path) { "/tmp/test_kadm5_ccache_#{Process.pid}" }
+      let(:cache_name) { "FILE:#{cache_path}" }
+      let(:cache) { Kerberos::Krb5::CredentialsCache.new(cache_name: cache_name) }
 
       before(:each) do
         krb5.get_init_creds_password(user, pass)
-        krb5.verify_init_creds(nil, nil, ccache)
+        krb5.verify_init_creds(ccache: cache, server: 'kadmin/kadmin@EXAMPLE.COM')
       end
 
       after(:each) do
         ccache.close rescue nil
         krb5.close rescue nil
-        FileUtils.rm_f([ccache_path, "#{ccache_path}.lock"])
+        FileUtils.rm_f([cache_path, "#{cache_path}.lock"])
       end
 
       it 'works with a populated credentials cache' do
@@ -106,13 +106,13 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
       end
 
       it 'returns a Kadm5 object' do
-        kadm5 = subject.new(principal: user, ccache: ccache)
+        kadm5 = subject.new(principal: user, ccache: cache)
         expect(kadm5).to be_a(subject)
         kadm5.close
       end
 
       it 'can perform operations after ccache authentication' do
-        kadm5 = subject.new(principal: user, ccache: ccache)
+        kadm5 = subject.new(principal: user, ccache: cache)
         privs = kadm5.get_privileges
         expect(privs).to be_a(Integer)
         expect(privs).not_to eq(0)
@@ -135,13 +135,13 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
 
       it 'raises ArgumentError when both password and ccache are given' do
         expect {
-          subject.new(principal: user, password: pass, ccache: ccache)
+          subject.new(principal: user, password: pass, ccache: cache)
         }.to raise_error(ArgumentError)
       end
 
       it 'raises ArgumentError when both keytab and ccache are given' do
         expect {
-          subject.new(principal: user, keytab: true, ccache: ccache)
+          subject.new(principal: user, keytab: true, ccache: cache)
         }.to raise_error(ArgumentError)
       end
     end
