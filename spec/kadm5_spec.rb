@@ -102,7 +102,7 @@ RSpec.describe 'Kerberos::Kadm5', :kadm5 do
       end
 
       it 'works with a populated credentials cache' do
-        expect { subject.new(principal: user, ccache: ccache) }.not_to raise_error
+        expect { subject.new(principal: user, ccache: cache) }.not_to raise_error
       end
 
       it 'returns a Kadm5 object' do
