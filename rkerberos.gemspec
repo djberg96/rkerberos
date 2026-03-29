@@ -24,11 +24,11 @@ Gem::Specification.new do |spec|
   spec.metadata = {
     'homepage_uri'          => 'https://github.com/rkerberos/rkerberos',
     'bug_tracker_uri'       => 'https://github.com/rkerberos/rkerberos/issues',
-    'changelog_uri'         => 'https://github.com/rkerberos/rkerberos/blob/main/CHANGES.md',
+    'changelog_uri'         => 'https://github.com/rkerberos/rkerberos/blob/master/CHANGES.md',
     'documentation_uri'     => 'https://github.com/rkerberos/rkerberos/wiki',
     'source_code_uri'       => 'https://github.com/rkerberos/rkerberos',
     'wiki_uri'              => 'https://github.com/rkerberos/rkerberos/wiki',
-    'github_repo'           => 'https://github.com/djberg96/rkerberos',
+    'github_repo'           => 'https://github.com/rkerberos/rkerberos',
     'funding_uri'           => 'https://github.com/sponsors/rkerberos',
     'rubygems_mfa_required' => 'true'
   }
